@@ -1,8 +1,22 @@
+import HomePage from './pages/HomePage'
+import LoginPage from './pages/LoginPage'
+import AkunPage from './pages/AkunPage'
+import PulauPage from './pages/PulauPage'
+import EventPage from './pages/EventPage'
+import Navbar from './components/Navbar'
+
 function App() {
   return (
-    <div className="flex justify-center items-center h-screen bg-blue-100">
-      <h1 className="text-4xl font-bold text-blue-700">Aku jelajah budaya</h1>
-    </div>
+    <>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/akun" element={<AkunPage />} />
+        <Route path="/pulau" element={<PulauPage />} />
+        <Route path="/event" element={<EventPage />} />
+      </Routes>
+    </>
   )
 }
 
