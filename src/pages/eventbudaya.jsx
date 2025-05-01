@@ -2,7 +2,7 @@
 const EventBudaya = () => {
     return (
         <div className="p-8">
-        <h1 className="text-4xl font-bold">Event Budaya</h1>
+        <h1 className="text-xl font-bold">Temukan Event Menarik disekitarmu!</h1>
       </div>
     );
 };
