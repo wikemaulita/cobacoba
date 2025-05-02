@@ -19,7 +19,7 @@ const Nav = () => {
         rounded-full px-5 py-2 text-xl'>Login</a>
         </div>
         <div className='ssm:block lg:hidden'>
-          <AiOutlineClose size={30} className='text-white'/>
+          <AiOutlineClose size={30} className='text-black'/>
         </div>
       </div>
     </div>
