@@ -17,7 +17,7 @@ const DetailEvent = () => {
             <h1 className="text-5xl font-bold mb-4">Lebaran Betawi 2025</h1>
             <p className="text-xl mb-8">
               {/* Tambahkan teks deskripsi di sini */}
-              Detail tentang event ini akan ditampilkan di sini.
+              Detail tentang event ini akan ditampilkan di sini...
             </p>
           </div>
         </section>
