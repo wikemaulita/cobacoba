@@ -35,7 +35,6 @@ import {
 import { Pencil, Plus, Trash2, MapPin, Map, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock data for regions
 const mockRegions = [
   {
     id: 1,

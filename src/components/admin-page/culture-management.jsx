@@ -46,7 +46,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock data for cultures
 const mockCultures = [
   {
     id: 1,
@@ -175,7 +174,7 @@ export default function CultureManagement() {
     setFormData((prev) => ({
       ...prev,
       province: value,
-      region: "", // Reset region when province changes
+      region: "",
     }));
     setAvailableRegions(mockRegions[value] || []);
   };

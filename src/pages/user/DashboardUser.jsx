@@ -14,7 +14,6 @@ export default function UserDashboard() {
   const [featuredEvent, setFeaturedEvent] = useState(null);
 
   useEffect(() => {
-    // Sort events by date to get upcoming ones
     const sortedEvents = [...mockEvents].sort(
       (a, b) => new Date(a.date) - new Date(b.date)
     );

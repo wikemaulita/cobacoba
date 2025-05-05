@@ -30,12 +30,7 @@ import EventManagement from "./components/admin-page/event-management";
 
 function AppContent() {
   const location = useLocation();
-  const adminDashboardPaths = [
-    "/super-admin/",
-    "/admin-daerah/",
-    // Add specific admin management paths if needed later
-  ];
-  // Hide Navbar if path starts with /user/ or is an admin dashboard path
+  const adminDashboardPaths = ["/super-admin/", "/admin-daerah/"];
   const shouldShowNavbar =
     !location.pathname.startsWith("/user/") &&
     !adminDashboardPaths.some((path) => location.pathname.startsWith(path));
