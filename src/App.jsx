@@ -9,10 +9,10 @@ import Navbar from "./components/Navbar";
 import DetailEvent from "./pages/Detailevent";
 import EventBudaya from "./pages/eventbudaya";
 import Home from "./pages/Home";
-import Login from "./pages/Login";
+import Login from "./pages/auth/Login";
 import NotFound from "./pages/NotFound";
 import Pulau from "./pages/pulau";
-import Register from "./pages/Register";
+import Register from "./pages//auth/Register";
 import DashboardSuperAdmin from "./pages/super-admin/DashboardSuperAdmin";
 import DashboardAdminDaerah from "./pages/admin-daerah/DashboardAdminDaerah";
 import UserDashboard from "./pages/user/DashboardUser";
@@ -27,7 +27,6 @@ import ProvinceManagement from "./components/admin-page/province-management";
 import RegionManagement from "./components/admin-page/region-management";
 import CultureManagement from "./components/admin-page/culture-management";
 import EventManagement from "./components/admin-page/event-management";
-import Forum from "./pages/Forum";
 
 function AppContent() {
   const location = useLocation();
@@ -41,7 +40,7 @@ function AppContent() {
       {shouldShowNavbar && (
         <>
           <Navbar />
-          <div className="h-[80px] md:h-[96px]" /> {/* Spacer sesuai tinggi Navbar */}
+          <div className="h-[80px] md:h-[96px]" /> 
         </>
       )}
       <main className="flex-grow">
@@ -50,7 +49,6 @@ function AppContent() {
           <Route path="/eventbudaya" element={<EventBudaya />} />
           <Route path="/Detailevent" element={<DetailEvent />} />
           <Route path="/pulau" element={<Pulau />} />
-          <Route path="/forum" element={<Forum />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/super-admin" element={<DashboardSuperAdmin />}>
