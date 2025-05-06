@@ -155,10 +155,8 @@ const Home = () => {
           <p className="text-xl mb-8 max-w-2xl mx-auto">
             Bergabunglah dengan komunitas Jelajah Budaya dan dapatkan informasi terbaru tentang event budaya di seluruh Indonesia.
           </p>
-          <Link to="/register">
-            <button className="bg-white text-blue-600 hover:bg-gray-100 font-bold py-3 px-8 rounded-full text-lg transition duration-300">
+          <Link to="/register" className="bg-white text-blue-600 hover:bg-gray-100 font-bold py-3 px-8 rounded-full text-lg transition duration-300">
               Daftar Sekarang
-            </button>
           </Link>
         </div>
       </section>
