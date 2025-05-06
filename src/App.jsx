@@ -27,7 +27,7 @@ import ProvinceManagement from "./components/admin-page/province-management";
 import RegionManagement from "./components/admin-page/region-management";
 import CultureManagement from "./components/admin-page/culture-management";
 import EventManagement from "./components/admin-page/event-management";
-import Forum from "./Forum";
+import Forum from "./pages/Forum";
 
 function AppContent() {
   const location = useLocation();
