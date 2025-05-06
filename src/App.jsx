@@ -8,7 +8,7 @@ import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import DetailEvent from "./pages/Detailevent";
 import EventBudaya from "./pages/eventbudaya";
-import Home from "./pages/home";
+import Home from "./pages/Home";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Pulau from "./pages/pulau";
@@ -27,6 +27,7 @@ import ProvinceManagement from "./components/admin-page/province-management";
 import RegionManagement from "./components/admin-page/region-management";
 import CultureManagement from "./components/admin-page/culture-management";
 import EventManagement from "./components/admin-page/event-management";
+import Forum from "./Forum";
 
 function AppContent() {
   const location = useLocation();
@@ -37,13 +38,19 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {shouldShowNavbar && <Navbar />}
+      {shouldShowNavbar && (
+        <>
+          <Navbar />
+          <div className="h-[80px] md:h-[96px]" /> {/* Spacer sesuai tinggi Navbar */}
+        </>
+      )}
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/eventbudaya" element={<EventBudaya />} />
           <Route path="/Detailevent" element={<DetailEvent />} />
           <Route path="/pulau" element={<Pulau />} />
+          <Route path="/forum" element={<Forum />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/super-admin" element={<DashboardSuperAdmin />}>
