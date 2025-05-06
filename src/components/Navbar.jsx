@@ -47,22 +47,16 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-8">
-              <Link
-                to="/eventbudaya"
-                className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300"
-              >
+              <Link to="/eventbudaya" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300">
                 Event
               </Link>
-              <Link
-                to="/pulau"
-                className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300"
-              >
+              <Link to="/pulau" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300">
                 Pulau
               </Link>
-              <Link
-                to="/login"
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full font-medium transition duration-300"
-              >
+              <Link to="/forum" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300">
+                Forum
+              </Link>
+              <Link to="/login" className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full font-medium transition duration-300">
                 Login
               </Link>
             </div>
@@ -133,6 +127,13 @@ const Navbar = () => {
             onClick={() => setIsOpen(false)}
           >
             Pulau
+          </Link>
+          <Link
+            to="/forum"
+            className="block px-3 py-3 text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-100 rounded-md transition duration-300"
+            onClick={() => setIsOpen(false)}
+          >
+            Forum
           </Link>
           <Link
             to="/login"
