@@ -2,7 +2,7 @@ import eventImage from "../assets/images/eventImage.webp";
 
 const DetailEvent = () => { 
     return (
-      <div className="flex flex-col min-h-screen pt-24">  
+      <div className="flex flex-col min-h-screen">  
         {/* Hero Section */}
         <section
           className="relative flex items-center justify-center py-32 bg-cover bg-center"
