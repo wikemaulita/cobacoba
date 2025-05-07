@@ -1,4 +1,4 @@
-# **Jelajah Budaya Website KSM Android Study Club**
+# **Jelajah Budaya Frontend KSM Android Study Club**
 
 ## To Install Dependencies
 `npm install`
