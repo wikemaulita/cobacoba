@@ -171,16 +171,16 @@ const Home = () => {
             </div>
             
             <div className="flex space-x-6 mb-6 md:mb-0">
-              <a href="#" className="text-white hover:text-gray-300 transition duration-300">
+              <a href="https://youtu.be/dQw4w9WgXcQ" className="text-white hover:text-gray-300 transition duration-300">
                 <FaFacebook size={24} />
               </a>
-              <a href="#" className="text-white hover:text-gray-300 transition duration-300">
+              <a href="https://youtu.be/dQw4w9WgXcQ" className="text-white hover:text-gray-300 transition duration-300">
                 <FaInstagram size={24} />
               </a>
-              <a href="#" className="text-white hover:text-gray-300 transition duration-300">
+              <a href="https://youtu.be/dQw4w9WgXcQ" className="text-white hover:text-gray-300 transition duration-300">
                 <FaTwitter size={24} />
               </a>
-              <a href="#" className="text-white hover:text-gray-300 transition duration-300">
+              <a href="https://youtu.be/dQw4w9WgXcQ" className="text-white hover:text-gray-300 transition duration-300">
                 <FaYoutube size={24} />
               </a>
             </div>
