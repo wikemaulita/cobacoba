@@ -50,7 +50,7 @@ const Home = () => {
                 Menyelami Keindahan Budaya Nusantara
               </p>
               <button className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full transition duration-300">
-                Jelajahi Sekarang
+                Jelajahi Sekarang!
               </button>
             </div>
             
@@ -184,10 +184,6 @@ const Home = () => {
                 <FaYoutube size={24} />
               </a>
             </div>
-          </div>
-          
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center">
-            <p>Jelajah Budaya - © {new Date().getFullYear()}</p>
           </div>
         </div>
       </footer>
