@@ -1,10 +1,10 @@
 # **Jelajah Budaya Frontend KSM Android Study Club**
 
 ## To Install Dependencies
-`npm install`
+`npm install` or `bun install`
 
 ## To Run
-`npm run dev`
+`npm run dev` or `bun dev`
 
 ## Stack Used
 - [Vite](http://vite.dev) 
