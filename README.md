@@ -7,6 +7,6 @@
 `npm run dev`
 
 ## Stack Used
-- [React](http://react.dev) 
 - [Vite](http://vite.dev) 
+- [React](http://react.dev) 
 - [Tailwind](http://tailwindcss.com) 
