@@ -1,3 +1,4 @@
+// src/App.jsx
 import {
   Route,
   BrowserRouter as Router,
@@ -28,6 +29,10 @@ import RegionManagement from "./components/admin-page/region-management";
 import CultureManagement from "./components/admin-page/culture-management";
 import EventManagement from "./components/admin-page/event-management";
 
+// Import AuthProvider
+import { AuthProvider } from "./contexts/AuthContext"; //
+import ProtectedRoute from "./components/auth/ProtectedRoute"; //
+
 function AppContent() {
   const location = useLocation();
   const adminDashboardPaths = ["/super-admin/", "/admin-daerah/"];
@@ -51,7 +56,12 @@ function AppContent() {
           <Route path="/pulau" element={<Pulau />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/super-admin" element={<DashboardSuperAdmin />}>
+
+          {/* Protected Routes for Super Admin */}
+          <Route 
+            path="/super-admin" 
+            element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><DashboardSuperAdmin /></ProtectedRoute>} //
+          >
             <Route path="dashboard" element={<HomeDashboard />} />
             <Route path="account-requests" element={<AccountRequests />} />
             <Route path="provinces" element={<ProvinceManagement />} />
@@ -59,13 +69,23 @@ function AppContent() {
             <Route path="cultures" element={<CultureManagement />} />
             <Route path="events" element={<EventManagement />} />
           </Route>
-          <Route path="/admin-daerah" element={<DashboardAdminDaerah />}>
+
+          {/* Protected Routes for Admin Daerah */}
+          <Route 
+            path="/admin-daerah" 
+            element={<ProtectedRoute allowedRoles={['ADMIN_DAERAH']}><DashboardAdminDaerah /></ProtectedRoute>} //
+          >
             <Route path="dashboard" element={<HomeDashboard />} />
             <Route path="provinces" element={<ProvinceManagement />} />
             <Route path="cultures" element={<CultureManagement />} />
             <Route path="events" element={<EventManagement />} />
           </Route>
-          <Route path="/user" element={<UserLayout />}>
+
+          {/* Protected Routes for User */}
+          <Route 
+            path="/user" 
+            element={<ProtectedRoute allowedRoles={['USER', 'SUPER_ADMIN', 'ADMIN_DAERAH']}><UserLayout /></ProtectedRoute>} //
+          >
             <Route index element={<UserDashboard />} />
             <Route path="dashboard" element={<UserDashboard />} />
             <Route path="events" element={<EventsPage />} />
@@ -73,6 +93,7 @@ function AppContent() {
             <Route path="provinces" element={<ProvincesPage />} />
             <Route path="events/:id" element={<EventDetailPage />} />
           </Route>
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
@@ -84,7 +105,9 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AppContent />
+      <AuthProvider> {/* */}
+        <AppContent />
+      </AuthProvider>
     </Router>
   );
 }

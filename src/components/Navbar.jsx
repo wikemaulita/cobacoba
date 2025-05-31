@@ -1,7 +1,14 @@
+// src/components/Navbar.jsx
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
+import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
+
+// Import icons for social media (sudah ada)
+import { FaFacebook, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 
 const Navbar = () => {
+  const navigate = useNavigate();
+  const { isLoggedIn, user, logout } = useAuth(); // Gunakan useAuth hook
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -22,6 +29,19 @@ const Navbar = () => {
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
+  };
+
+  const handleDashboardClick = () => {
+    if (user) {
+      if (user.role === 'SUPER_ADMIN') {
+        navigate('/super-admin/dashboard');
+      } else if (user.role === 'ADMIN_DAERAH') {
+        navigate('/admin-daerah/dashboard');
+      } else {
+        navigate('/user/dashboard');
+      }
+    }
+    setIsOpen(false);
   };
 
   return (
@@ -53,9 +73,27 @@ const Navbar = () => {
               <Link to="/pulau" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300">
                 Pulau
               </Link>
-              <Link to="/login" className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full font-medium transition duration-300">
-                Login
-              </Link>
+              
+              {isLoggedIn ? (
+                <>
+                  <button 
+                    onClick={handleDashboardClick} 
+                    className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300"
+                  >
+                    Dashboard
+                  </button>
+                  <button 
+                    onClick={logout} 
+                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full font-medium transition duration-300"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full font-medium transition duration-300">
+                  Login
+                </Link>
+              )}
             </div>
           </div>
 
@@ -125,13 +163,30 @@ const Navbar = () => {
           >
             Pulau
           </Link>
-          <Link
-            to="/login"
-            className="block px-3 py-3 text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-100 rounded-md transition duration-300"
-            onClick={() => setIsOpen(false)}
-          >
-            Login
-          </Link>
+          {isLoggedIn ? (
+            <>
+              <button
+                onClick={handleDashboardClick}
+                className="block w-full text-left px-3 py-3 text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-100 rounded-md transition duration-300"
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={logout}
+                className="block w-full text-left px-3 py-3 text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-100 rounded-md transition duration-300"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              className="block px-3 py-3 text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-100 rounded-md transition duration-300"
+              onClick={() => setIsOpen(false)}
+            >
+              Login
+            </Link>
+          )}
         </div>
       </div>
     </nav>

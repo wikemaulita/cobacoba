@@ -1,3 +1,4 @@
+// src/components/user/sidebar.jsx
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -13,14 +14,16 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast"; // useToast diimpor di AuthContext
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
 
 export default function UserSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Tidak perlu lagi diimpor di sini
+  const { user, logout } = useAuth(); // Gunakan useAuth hook
   const [collapsed, setCollapsed] = useState(false);
 
   const menuItems = [
@@ -50,12 +53,10 @@ export default function UserSidebar() {
     },
   ];
 
+  // Fungsi handleLogout sekarang memanggil fungsi logout dari AuthContext
   const handleLogout = () => {
-    toast({
-      title: "Logging out",
-      description: "You have been logged out successfully",
-    });
-    navigate("/");
+    logout(); //
+    // navigate("/"); // Navigasi sudah dihandle di AuthContext
   };
 
   const isActive = (path) => {
@@ -110,12 +111,14 @@ export default function UserSidebar() {
         <div className="flex items-center">
           <Avatar>
             <AvatarImage src="/placeholder.svg?height=32&width=32" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarFallback>
+              {user ? user.username.charAt(0).toUpperCase() : "U"} {/* Tampilkan inisial user */}
+            </AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="ml-3">
-              <p className="text-sm font-medium">User Name</p>
-              <p className="text-xs text-muted-foreground">user@example.com</p>
+              <p className="text-sm font-medium">{user ? user.username : "User Name"}</p> {/* Tampilkan username */}
+              <p className="text-xs text-muted-foreground">{user ? user.email : "user@example.com"}</p> {/* Tampilkan email */}
             </div>
           )}
         </div>
