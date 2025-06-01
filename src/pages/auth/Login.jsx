@@ -27,6 +27,10 @@ const Login = () => {
     }
   };
 
+  const success = await login(formData.email, formData.password);
+    console.log("Login success?", success);
+
+
   return (
     <div className="max-w-md mx-auto px-4 py-12 pt-24">
       <div className="bg-white shadow rounded-lg p-6">
