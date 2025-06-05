@@ -1,12 +1,7 @@
-import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Search, Calendar, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -15,55 +10,86 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Search, Filter } from "lucide-react";
 import EventCard from "@/components/user/event-card";
-import { mockEvents, mockProvinces, mockRegions } from "@/lib/mock-data";
+import { mockProvinces, mockRegions, getProvinceFromRegion } from "@/lib/mock-data"; // Import getProvinceFromRegion
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
-  const [filteredEvents, setFilteredEvents] = useState(mockEvents);
+  const [events, setEvents] = useState([]); // State untuk menyimpan event dari API
+  const [loading, setLoading] = useState(true); // State loading
+  const [error, setError] = useState(null); // State error
   const [availableRegions, setAvailableRegions] = useState([]);
+
+  // Fungsi untuk mengambil data event dari backend
+  const fetchEvents = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('http://localhost:3000/events');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      
+      // Memetakan data dari backend ke format yang diharapkan frontend
+      const mappedEvents = data.event.data.map(event => ({
+        id: event.id,
+        name: event.nama,
+        description: event.deskripsi,
+        image: event.gambar || "/placeholder.svg?height=400&width=800", // Fallback gambar
+        location: event.lokasi,
+        date: new Date(event.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }), // Format tanggal
+        region: event.daerah.nama, // Nama daerah
+        province: getProvinceFromRegion(event.daerah.nama), // Dapatkan nama provinsi dari nama daerah
+        // Anda bisa menambahkan rating, reviewCount, attendees jika API menyediakannya
+        rating: 4.5, // Mock sementara
+        reviewCount: 0, // Mock sementara
+        attendees: Math.floor(Math.random() * 100) + 50, // Mock sementara
+      }));
+      setEvents(mappedEvents);
+    } catch (err) {
+      console.error("Failed to fetch events:", err);
+      setError("Gagal memuat event. Silakan coba lagi nanti.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents(); // Panggil saat komponen dimuat
+  }, []);
+
+  const filteredEvents = events.filter((event) => {
+    const matchesSearch =
+      event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.location.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesProvince = selectedProvince
+      ? event.province === selectedProvince
+      : true;
+    
+    const matchesRegion = selectedRegion
+      ? event.region === selectedRegion
+      : true;
+
+    return matchesSearch && matchesProvince && matchesRegion;
+  });
 
   const handleProvinceChange = (value) => {
     setSelectedProvince(value);
     setSelectedRegion("");
     setAvailableRegions(mockRegions[value] || []);
-
-    applyFilters(searchQuery, value, "");
   };
 
   const handleRegionChange = (value) => {
     setSelectedRegion(value);
-    applyFilters(searchQuery, selectedProvince, value);
   };
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
-    applyFilters(e.target.value, selectedProvince, selectedRegion);
-  };
-
-  const applyFilters = (query, province, region) => {
-    let filtered = [...mockEvents];
-
-    if (query) {
-      filtered = filtered.filter(
-        (event) =>
-          event.name.toLowerCase().includes(query.toLowerCase()) ||
-          event.description.toLowerCase().includes(query.toLowerCase())
-      );
-    }
-
-    if (province) {
-      filtered = filtered.filter((event) => event.province === province);
-    }
-
-    if (region) {
-      filtered = filtered.filter((event) => event.region === region);
-    }
-
-    setFilteredEvents(filtered);
   };
 
   const resetFilters = () => {
@@ -71,7 +97,8 @@ export default function EventsPage() {
     setSelectedProvince("");
     setSelectedRegion("");
     setAvailableRegions([]);
-    setFilteredEvents(mockEvents);
+    // Re-fetch events to reset any internal filtering if needed
+    // fetchEvents(); // Opsional: jika filter dilakukan di backend, panggil ini. Jika di frontend, tidak perlu.
   };
 
   return (
@@ -165,7 +192,22 @@ export default function EventsPage() {
           </div>
         </div>
 
-        {filteredEvents.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-10 text-muted-foreground">Loading events...</div>
+        ) : error ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-10">
+              <Search className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-xl font-medium mb-2">Error</h3>
+              <p className="text-center text-muted-foreground mb-4">
+                {error}
+              </p>
+              <Button variant="outline" onClick={fetchEvents}>
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        ) : filteredEvents.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredEvents.map((event) => (
               <EventCard key={event.id} event={event} />

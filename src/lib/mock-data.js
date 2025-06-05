@@ -202,3 +202,41 @@ export const mockRegions = {
   "Jawa Tengah": ["Semarang", "Solo", "Magelang"],
   "Jawa Timur": ["Surabaya", "Malang", "Banyuwangi"],
 };
+
+// --- Fungsi Pembantu Baru ---
+// Fungsi untuk mendapatkan nama provinsi dari nama daerah/kota
+export const getProvinceFromRegion = (regionName) => {
+  for (const provinceName in mockRegions) {
+    if (mockRegions[provinceName].includes(regionName)) {
+      return provinceName;
+    }
+  }
+  return "N/A"; // Jika tidak ditemukan
+};
+
+// Fungsi untuk mendapatkan daerahId dari nama daerah/region
+// Ini adalah asumsi sederhana berdasarkan mock data, mungkin perlu API lookup di masa nyata
+export const getDaerahIdFromRegion = (regionName) => {
+  // Anda perlu memetakan daerah ke ID yang valid dari backend.
+  // Untuk demo, kita akan pakai ID dummy atau yang ada di mock.
+  // Misal, jika Denpasar ID-nya 1, Yogyakarta City ID-nya 2, Bandung ID-nya 3, dst.
+  // Karena mockRegions tidak punya ID, kita buat map sederhana.
+  const regionToIdMap = {
+    "Denpasar": 1,
+    "Yogyakarta City": 2,
+    "Bandung": 3,
+    "Kuta": 1, // Contoh: Kuta juga di Bali
+    "Ubud": 1, // Contoh: Ubud juga di Bali
+    "Bantul": 2,
+    "Sleman": 2,
+    "Bogor": 3,
+    "Cirebon": 3,
+    "Semarang": 4,
+    "Solo": 4,
+    "Magelang": 4,
+    "Surabaya": 5,
+    "Malang": 5,
+    "Banyuwangi": 5,
+  };
+  return regionToIdMap[regionName] || null; // Mengembalikan ID atau null
+};

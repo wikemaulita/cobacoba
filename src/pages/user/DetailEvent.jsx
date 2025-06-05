@@ -29,12 +29,13 @@ import {
   Share2,
   Star,
 } from "lucide-react";
-import { mockEvents } from "@/lib/mock-data";
+// import { mockEvents } from "@/lib/mock-data"; // Hapus import mockEvents
 import RatingStars from "@/components/user/rating-stars";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useNavigate } from "react-router-dom";
+import { getProvinceFromRegion } from "@/lib/mock-data"; // Import fungsi pembantu
 
-// Mock review data
+// Mock review data (tetap pakai mock untuk review, karena tidak ada API review)
 const mockReviews = [
   {
     id: 1,
@@ -73,6 +74,8 @@ export default function EventDetailPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isJoined, setIsJoined] = useState(false);
   const [isRatingOpen, setIsRatingOpen] = useState(false);
   const [userRating, setUserRating] = useState(0);
@@ -80,16 +83,43 @@ export default function EventDetailPage() {
   const [reviews, setReviews] = useState(mockReviews);
 
   useEffect(() => {
-    // Fetch event data
-    const eventId = Number(params.id);
-    const foundEvent = mockEvents.find((e) => e.id === eventId);
+    const fetchEventDetail = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const eventId = params.id;
+        const response = await fetch(`http://localhost:3000/events/${eventId}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // Memetakan data dari backend ke format yang diharapkan frontend
+        const mappedEvent = {
+          id: data.event.id,
+          name: data.event.nama,
+          description: data.event.deskripsi,
+          image: data.event.gambar || "/placeholder.svg?height=600&width=1200", // Fallback gambar
+          location: data.event.lokasi,
+          date: new Date(data.event.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
+          region: data.event.daerah.nama,
+          province: getProvinceFromRegion(data.event.daerah.nama), // Dapatkan nama provinsi
+          // Tambahkan properti lain yang mungkin tidak ada di API tapi dibutuhkan (misal: rating, attendees)
+          rating: 4.7, // Mock sementara
+          attendees: Math.floor(Math.random() * 200) + 50, // Mock sementara
+        };
+        setEvent(mappedEvent);
+      } catch (err) {
+        console.error("Failed to fetch event detail:", err);
+        setError("Gagal memuat detail event. Silakan coba lagi nanti.");
+        navigate("/user/events"); // Arahkan kembali jika ada error fatal
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (foundEvent) {
-      setEvent(foundEvent);
-    } else {
-      navigate("/user/events");
-    }
-  }, [params.id, navigate]);
+    fetchEventDetail();
+  }, [params.id, navigate]); // Dependensi: id dan navigate
 
   const handleJoinEvent = () => {
     setIsJoined(!isJoined);
@@ -146,8 +176,16 @@ export default function EventDetailPage() {
     setReviews(updatedReviews);
   };
 
+  if (loading) {
+    return <div className="text-center py-10 text-muted-foreground">Loading event details...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  }
+
   if (!event) {
-    return <div>Loading...</div>;
+    return <div className="text-center py-10 text-muted-foreground">Event not found.</div>;
   }
 
   return (
@@ -253,6 +291,7 @@ export default function EventDetailPage() {
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
+          {/* Untuk sementara, related event menggunakan mock data */}
           <TabsTrigger value="related">Related</TabsTrigger>
         </TabsList>
         <TabsContent value="details" className="space-y-4">
@@ -263,7 +302,6 @@ export default function EventDetailPage() {
             <CardContent>
               <p className="whitespace-pre-line">
                 {event.description}
-                {/* Extend the description for a more comprehensive view */}
                 {"\n\n"}
                 Join us for an unforgettable cultural experience at {event.name}
                 . This event celebrates the rich cultural heritage of{" "}
@@ -411,43 +449,43 @@ export default function EventDetailPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Untuk sementara, related event masih menggunakan mockEvents */}
               <div className="grid gap-4 md:grid-cols-3">
-                {mockEvents
-                  .filter((e) => e.id !== event.id)
-                  .slice(0, 3)
-                  .map((relatedEvent) => (
-                    <Card
-                      key={relatedEvent.id}
-                      className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                      onClick={() =>
-                        navigate(`/user/events/${relatedEvent.id}`)
-                      }
-                    >
-                      <div className="h-32 relative">
-                        <img
-                          src={
-                            relatedEvent.image ||
-                            "/placeholder.svg?height=200&width=400"
-                          }
-                          alt={relatedEvent.name}
-                          className="h-full w-full object-cover"
-                        />
+                {/* Impor mockEvents jika ingin menampilkan Related Events dari mock data.
+                    Atau implementasi API untuk mengambil related events */}
+                {([]).slice(0, 3).map((relatedEvent) => ( // Ganti [] dengan mockEvents jika ingin tampilkan mock data
+                  <Card
+                    key={relatedEvent.id}
+                    className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() =>
+                      navigate(`/user/events/${relatedEvent.id}`)
+                    }
+                  >
+                    <div className="h-32 relative">
+                      <img
+                        src={
+                          relatedEvent.image ||
+                          "/placeholder.svg?height=200&width=400"
+                        }
+                        alt={relatedEvent.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <CardContent className="p-3">
+                      <h4 className="font-medium line-clamp-1">
+                        {relatedEvent.name}
+                      </h4>
+                      <div className="flex items-center text-xs text-muted-foreground mt-1">
+                        <Calendar className="h-3 w-3 mr-1" />{" "}
+                        {relatedEvent.date}
                       </div>
-                      <CardContent className="p-3">
-                        <h4 className="font-medium line-clamp-1">
-                          {relatedEvent.name}
-                        </h4>
-                        <div className="flex items-center text-xs text-muted-foreground mt-1">
-                          <Calendar className="h-3 w-3 mr-1" />{" "}
-                          {relatedEvent.date}
-                        </div>
-                        <div className="flex items-center text-xs text-muted-foreground mt-1">
-                          <MapPin className="h-3 w-3 mr-1" />{" "}
-                          {relatedEvent.region}, {relatedEvent.province}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      <div className="flex items-center text-xs text-muted-foreground mt-1">
+                        <MapPin className="h-3 w-3 mr-1" />{" "}
+                        {relatedEvent.region}, {relatedEvent.province}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </CardContent>
           </Card>

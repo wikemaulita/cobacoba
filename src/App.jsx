@@ -31,6 +31,7 @@ import EventManagement from "./components/admin-page/event-management";
 // Import AuthProvider
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import DetailPulau from "./pages/DetailPulau"; // <-- Import DetailPulau
 
 function AppContent() {
   const location = useLocation();
@@ -53,6 +54,7 @@ function AppContent() {
           <Route path="/eventbudaya" element={<EventBudaya />} />
           <Route path="/Detailevent" element={<DetailEvent />} />
           <Route path="/pulau" element={<Pulau />} />
+          <Route path="/pulau/:id" element={<DetailPulau />} /> {/* <-- Tambahkan rute ini */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 

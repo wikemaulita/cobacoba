@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -51,89 +51,81 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-
-// Mock data for events
-const mockEvents = [
-  {
-    id: 1,
-    name: "Bali Arts Festival",
-    description:
-      "Annual arts and cultural festival showcasing Balinese arts, music, and dance.",
-    image: "/placeholder.svg?height=100&width=100",
-    location: "Denpasar Art Center",
-    date: "2023-06-15",
-    region: "Denpasar",
-    province: "Bali",
-  },
-  {
-    id: 2,
-    name: "Yogyakarta Cultural Night",
-    description:
-      "A night of traditional Javanese performances and cultural exhibitions.",
-    image: "/placeholder.svg?height=100&width=100",
-    location: "Malioboro Street",
-    date: "2023-07-22",
-    region: "Yogyakarta City",
-    province: "DI Yogyakarta",
-  },
-  {
-    id: 3,
-    name: "Bandung Jazz Festival",
-    description:
-      "Annual jazz music festival featuring local and international jazz musicians.",
-    image: "/placeholder.svg?height=100&width=100",
-    location: "Saung Angklung Udjo",
-    date: "2023-08-10",
-    region: "Bandung",
-    province: "Jawa Barat",
-  },
-];
-
-// Mock data for provinces and regions
-const mockProvinces = [
-  { id: 1, name: "Bali" },
-  { id: 2, name: "DI Yogyakarta" },
-  { id: 3, name: "Jawa Barat" },
-  { id: 4, name: "Jawa Tengah" },
-  { id: 5, name: "Jawa Timur" },
-];
-
-const mockRegions = {
-  Bali: ["Denpasar", "Kuta", "Ubud"],
-  "DI Yogyakarta": ["Yogyakarta City", "Bantul", "Sleman"],
-  "Jawa Barat": ["Bandung", "Bogor", "Cirebon"],
-  "Jawa Tengah": ["Semarang", "Solo", "Magelang"],
-  "Jawa Timur": ["Surabaya", "Malang", "Banyuwangi"],
-};
+import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
+import { mockProvinces, mockRegions, getProvinceFromRegion, getDaerahIdFromRegion } from "@/lib/mock-data"; // Import fungsi pembantu
 
 export default function EventManagement() {
   const { toast } = useToast();
-  const [events, setEvents] = useState(mockEvents);
+  const { token } = useAuth(); // Ambil token dari AuthContext
+  const [events, setEvents] = useState([]); // Inisialisasi kosong, akan diisi dari API
+  const [loading, setLoading] = useState(true); // State loading untuk tabel
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [availableRegions, setAvailableRegions] = useState([]);
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    image: "",
-    location: "",
-    date: "",
-    region: "",
+    nama: "", // Sesuai API backend
+    deskripsi: "", // Sesuai API backend
+    gambar: null, // Untuk file gambar
+    gambarPreview: "", // Untuk pratinjau gambar
+    lokasi: "", // Sesuai API backend
+    tanggal: "", // Sesuai API backend
+    daerahId: "", // Sesuai API backend, penting!
+    // Frontend-specific fields for dropdowns (not sent to API directly)
     province: "",
+    region: "",
   });
+
+  // Fungsi untuk mengambil event dari backend
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:3000/events');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      const mappedEvents = data.event.data.map(event => ({
+        id: event.id,
+        nama: event.nama,
+        deskripsi: event.deskripsi,
+        gambar: event.gambar,
+        tanggal: event.tanggal, // Tetap string ISO untuk konsistensi
+        lokasi: event.lokasi,
+        daerahId: event.daerahId,
+        // Properti tambahan untuk frontend display
+        region: event.daerah?.nama || "N/A", // Gunakan optional chaining
+        province: getProvinceFromRegion(event.daerah?.nama || ""),
+      }));
+      setEvents(mappedEvents);
+    } catch (error) {
+      toast({
+        title: "Gagal Memuat Event",
+        description: `Terjadi kesalahan: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents(); // Panggil saat komponen dimuat
+  }, []);
 
   const handleAddNew = () => {
     setSelectedEvent(null);
     setFormData({
-      name: "",
-      description: "",
-      image: "",
-      location: "",
-      date: "",
-      region: "",
+      nama: "",
+      deskripsi: "",
+      gambar: null,
+      gambarPreview: "",
+      lokasi: "",
+      tanggal: "",
+      daerahId: "",
       province: "",
+      region: "",
     });
     setAvailableRegions([]);
     setIsDialogOpen(true);
@@ -147,13 +139,15 @@ export default function EventManagement() {
   const handleEdit = (event) => {
     setSelectedEvent(event);
     setFormData({
-      name: event.name,
-      description: event.description,
-      image: event.image,
-      location: event.location,
-      date: event.date,
-      region: event.region,
+      nama: event.nama,
+      deskripsi: event.deskripsi,
+      gambar: null, // Jangan set file langsung, hanya preview
+      gambarPreview: event.gambar, // URL gambar yang sudah ada
+      lokasi: event.lokasi,
+      tanggal: event.tanggal,
+      daerahId: event.daerahId,
       province: event.province,
+      region: event.region,
     });
     setAvailableRegions(mockRegions[event.province] || []);
     setIsDialogOpen(true);
@@ -165,11 +159,19 @@ export default function EventManagement() {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const { name, value, files } = e.target;
+    if (name === "gambar" && files && files[0]) {
+      setFormData((prev) => ({
+        ...prev,
+        gambar: files[0],
+        gambarPreview: URL.createObjectURL(files[0]), // Buat URL preview
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleProvinceChange = (value) => {
@@ -177,6 +179,7 @@ export default function EventManagement() {
       ...prev,
       province: value,
       region: "", // Reset region when province changes
+      daerahId: "", // Reset daerahId
     }));
     setAvailableRegions(mockRegions[value] || []);
   };
@@ -185,68 +188,149 @@ export default function EventManagement() {
     setFormData((prev) => ({
       ...prev,
       region: value,
+      daerahId: getDaerahIdFromRegion(value), // Dapatkan daerahId dari nama region
     }));
   };
 
   const handleDateChange = (date) => {
     setFormData((prev) => ({
       ...prev,
-      date: format(date, "yyyy-MM-dd"),
+      tanggal: date ? format(date, "yyyy-MM-dd'T'HH:mm:ss.SSSXXX") : "", // Format ISO 8601
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (selectedEvent) {
-      // Edit existing event
-      const updatedEvents = events.map((event) =>
-        event.id === selectedEvent.id ? { ...event, ...formData } : event
-      );
-      setEvents(updatedEvents);
+    if (!token) {
       toast({
-        title: "Event Updated",
-        description: `${formData.name} has been updated successfully`,
+        title: "Akses Ditolak",
+        description: "Anda tidak memiliki otorisasi. Silakan login kembali.",
+        variant: "destructive",
       });
-    } else {
-      // Add new event
-      const newEvent = {
-        id: events.length + 1,
-        ...formData,
-      };
-      setEvents([...events, newEvent]);
-      toast({
-        title: "Event Added",
-        description: `${formData.name} has been added successfully`,
-      });
+      return;
     }
 
-    setIsDialogOpen(false);
+    const endpoint = selectedEvent
+      ? `http://localhost:3000/events/${selectedEvent.id}`
+      : 'http://localhost:3000/events/create-event';
+    const method = selectedEvent ? 'PUT' : 'POST';
+
+    // Buat FormData untuk mengirim data termasuk file
+    const formDataToSend = new FormData();
+    formDataToSend.append('nama', formData.nama);
+    formDataToSend.append('deskripsi', formData.deskripsi);
+    if (formData.gambar) { // Hanya tambahkan gambar jika ada file baru
+      formDataToSend.append('gambar', formData.gambar);
+    }
+    formDataToSend.append('lokasi', formData.lokasi);
+    formDataToSend.append('tanggal', formData.tanggal);
+    if (formData.daerahId) { // Hanya tambahkan daerahId jika ada
+        formDataToSend.append('daerahId', formData.daerahId);
+    } else {
+        // Fallback jika daerahId kosong, mungkin menggunakan ID default atau error
+        toast({
+            title: "Gagal",
+            description: "Daerah ID harus dipilih.",
+            variant: "destructive",
+        });
+        return;
+    }
+    
+    // Untuk PUT, kita tidak perlu kirim semua field jika tidak berubah,
+    // tapi FormData akan mengirim semua yang di-append. Backend harus menangani ini.
+
+    try {
+      const response = await fetch(endpoint, {
+        method: method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Penting: Jangan set 'Content-Type': 'multipart/form-data' secara manual
+          // Browser akan mengaturnya secara otomatis dengan boundary yang benar saat Anda menggunakan FormData
+        },
+        body: formDataToSend,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: selectedEvent ? "Event Diperbarui" : "Event Ditambahkan",
+          description: data.message || `${formData.nama} berhasil ${selectedEvent ? 'diperbarui' : 'ditambahkan'}`,
+        });
+        setIsDialogOpen(false);
+        fetchEvents(); // Ambil ulang data event setelah sukses
+      } else {
+        toast({
+          title: selectedEvent ? "Gagal Memperbarui Event" : "Gagal Menambahkan Event",
+          description: data.message || "Terjadi kesalahan. Silakan coba lagi.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting event:", error);
+      toast({
+        title: "Terjadi Kesalahan",
+        description: "Tidak dapat terhubung ke server. Silakan coba lagi nanti.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const confirmDelete = () => {
-    const updatedEvents = events.filter(
-      (event) => event.id !== selectedEvent.id
-    );
-    setEvents(updatedEvents);
-    toast({
-      title: "Event Deleted",
-      description: `${selectedEvent.name} has been deleted successfully`,
-    });
-    setIsDeleteDialogOpen(false);
+  const confirmDelete = async () => {
+    if (!token) {
+        toast({
+          title: "Akses Ditolak",
+          description: "Anda tidak memiliki otorisasi. Silakan login kembali.",
+          variant: "destructive",
+        });
+        return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/events/${selectedEvent.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Event Dihapus",
+          description: data.message || `${selectedEvent.nama} berhasil dihapus.`,
+        });
+        setIsDeleteDialogOpen(false);
+        fetchEvents(); // Ambil ulang data event setelah penghapusan
+      } else {
+        toast({
+          title: "Gagal Menghapus Event",
+          description: data.message || "Terjadi kesalahan saat menghapus event.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      toast({
+        title: "Terjadi Kesalahan",
+        description: "Tidak dapat terhubung ke server. Silakan coba lagi nanti.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Event Management</CardTitle>
+          <CardTitle>Manajemen Event</CardTitle>
           <CardDescription>
-            Add, edit, or remove cultural events in the system
+            Tambah, edit, atau hapus event budaya dalam sistem
           </CardDescription>
         </div>
         <Button onClick={handleAddNew}>
-          <Plus className="mr-2 h-4 w-4" /> Add Event
+          <Plus className="mr-2 h-4 w-4" /> Tambah Event
         </Button>
       </CardHeader>
       <CardContent>
@@ -254,7 +338,7 @@ export default function EventManagement() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Total Events
+                Total Event
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -264,145 +348,189 @@ export default function EventManagement() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Upcoming Events
+                Event Mendatang
               </CardTitle>
               <CalendarClock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2</div>
+              <div className="text-2xl font-bold">
+                {/* Hitung event mendatang dari data API */}
+                {events.filter(event => new Date(event.tanggal) > new Date()).length}
+              </div>
               <p className="text-xs text-muted-foreground">
-                In the next 30 days
+                Di 30 hari ke depan
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Most Active Province
+                Provinsi Teraktif
               </CardTitle>
               <Map className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Bali</div>
+              <div className="text-2xl font-bold">
+                {/* Hitung provinsi teraktif dari data API */}
+                {
+                  Object.entries(events.reduce((acc, event) => {
+                    acc[event.province] = (acc[event.province] || 0) + 1;
+                    return acc;
+                  }, {})).sort((a, b) => b[1] - a[1])[0]?.[0] || "N/A"
+                }
+              </div>
               <p className="text-xs text-muted-foreground">
-                8 events this year
+                {
+                  Object.entries(events.reduce((acc, event) => {
+                    acc[event.province] = (acc[event.province] || 0) + 1;
+                    return acc;
+                  }, {})).sort((a, b) => b[1] - a[1])[0]?.[1] || 0
+                } event tahun ini
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Busiest Month
+                Bulan Tersibuk
               </CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">July</div>
+              <div className="text-2xl font-bold">
+                {/* Hitung bulan tersibuk dari data API */}
+                {
+                    (() => {
+                        const monthCounts = events.reduce((acc, event) => {
+                            const month = new Date(event.tanggal).toLocaleString('en-US', { month: 'long' });
+                            acc[month] = (acc[month] || 0) + 1;
+                            return acc;
+                        }, {});
+                        return Object.entries(monthCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "N/A";
+                    })()
+                }
+              </div>
               <p className="text-xs text-muted-foreground">
-                12 scheduled events
+                {
+                    (() => {
+                        const monthCounts = events.reduce((acc, event) => {
+                            const month = new Date(event.tanggal).toLocaleString('en-US', { month: 'long' });
+                            acc[month] = (acc[month] || 0) + 1;
+                            return acc;
+                        }, {});
+                        return Object.entries(monthCounts).sort((a, b) => b[1] - a[1])[0]?.[1] || 0;
+                    })()
+                } event terjadwal
               </p>
             </CardContent>
           </Card>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Image</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Region</TableHead>
-              <TableHead>Province</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {events.map((event) => (
-              <TableRow key={event.id}>
-                <TableCell>
-                  <img
-                    src={event.image || "/placeholder.svg"}
-                    alt={event.name}
-                    className="h-10 w-10 rounded-md object-cover"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">{event.name}</TableCell>
-                <TableCell>{event.date}</TableCell>
-                <TableCell>{event.location}</TableCell>
-                <TableCell>{event.region}</TableCell>
-                <TableCell>{event.province}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleView(event)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleEdit(event)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="text-red-600"
-                      onClick={() => handleDelete(event)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+        {loading ? (
+          <div className="text-center py-10 text-muted-foreground">Memuat event...</div>
+        ) : events.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">Tidak ada event untuk ditampilkan.</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Gambar</TableHead>
+                <TableHead>Nama</TableHead>
+                <TableHead>Tanggal</TableHead>
+                <TableHead>Lokasi</TableHead>
+                <TableHead>Daerah</TableHead>
+                <TableHead>Provinsi</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {events.map((event) => (
+                <TableRow key={event.id}>
+                  <TableCell>
+                    <img
+                      src={event.gambar || "/placeholder.svg"}
+                      alt={event.nama}
+                      className="h-10 w-10 rounded-md object-cover"
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{event.nama}</TableCell>
+                  <TableCell>{new Date(event.tanggal).toLocaleDateString('id-ID')}</TableCell>
+                  <TableCell>{event.lokasi}</TableCell>
+                  <TableCell>{event.region}</TableCell>
+                  <TableCell>{event.province}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleView(event)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEdit(event)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-red-600"
+                        onClick={() => handleDelete(event)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+
 
         {/* View Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
-              <DialogTitle>Event Details</DialogTitle>
+              <DialogTitle>Detail Event</DialogTitle>
             </DialogHeader>
             {selectedEvent && (
               <div className="grid gap-4">
                 <div className="flex justify-center">
                   <img
-                    src={selectedEvent.image || "/placeholder.svg"}
-                    alt={selectedEvent.name}
+                    src={selectedEvent.gambar || "/placeholder.svg"}
+                    alt={selectedEvent.nama}
                     className="h-40 w-40 rounded-md object-cover"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium">Name</p>
-                    <p className="text-sm">{selectedEvent.name}</p>
+                    <p className="text-sm font-medium">Nama</p>
+                    <p className="text-sm">{selectedEvent.nama}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Date</p>
-                    <p className="text-sm">{selectedEvent.date}</p>
+                    <p className="text-sm font-medium">Tanggal</p>
+                    <p className="text-sm">{new Date(selectedEvent.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Location</p>
-                    <p className="text-sm">{selectedEvent.location}</p>
+                    <p className="text-sm font-medium">Lokasi</p>
+                    <p className="text-sm">{selectedEvent.lokasi}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Region</p>
+                    <p className="text-sm font-medium">Daerah</p>
                     <p className="text-sm">{selectedEvent.region}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Province</p>
+                    <p className="text-sm font-medium">Provinsi</p>
                     <p className="text-sm">{selectedEvent.province}</p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Description</p>
-                  <p className="text-sm">{selectedEvent.description}</p>
+                  <p className="text-sm font-medium">Deskripsi</p>
+                  <p className="text-sm">{selectedEvent.deskripsi}</p>
                 </div>
               </div>
             )}
@@ -411,7 +539,7 @@ export default function EventManagement() {
                 variant="outline"
                 onClick={() => setIsViewDialogOpen(false)}
               >
-                Close
+                Tutup
               </Button>
               <Button
                 onClick={() => {
@@ -430,28 +558,28 @@ export default function EventManagement() {
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
               <DialogTitle>
-                {selectedEvent ? "Edit Event" : "Add New Event"}
+                {selectedEvent ? "Edit Event" : "Tambah Event Baru"}
               </DialogTitle>
               <DialogDescription>
                 {selectedEvent
-                  ? "Update the event details below"
-                  : "Fill in the details for the new event"}
+                  ? "Perbarui detail event di bawah ini"
+                  : "Isi detail untuk event baru"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">Event Name</Label>
+                  <Label htmlFor="nama">Nama Event</Label>
                   <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
+                    id="nama"
+                    name="nama"
+                    value={formData.nama}
                     onChange={handleInputChange}
                     required
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="date">Date</Label>
+                  <Label htmlFor="tanggal">Tanggal</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -459,10 +587,10 @@ export default function EventManagement() {
                         className="w-full justify-start text-left font-normal"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.date ? (
-                          format(new Date(formData.date), "PPP")
+                        {formData.tanggal ? (
+                          format(new Date(formData.tanggal), "PPP HH:mm")
                         ) : (
-                          <span>Pick a date</span>
+                          <span>Pilih tanggal</span>
                         )}
                       </Button>
                     </PopoverTrigger>
@@ -470,32 +598,33 @@ export default function EventManagement() {
                       <Calendar
                         mode="single"
                         selected={
-                          formData.date ? new Date(formData.date) : undefined
+                          formData.tanggal ? new Date(formData.tanggal) : undefined
                         }
                         onSelect={handleDateChange}
+                        // Anda mungkin perlu menambahkan picker waktu juga jika diperlukan
                       />
                     </PopoverContent>
                   </Popover>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="location">Location</Label>
+                  <Label htmlFor="lokasi">Lokasi</Label>
                   <Input
-                    id="location"
-                    name="location"
-                    value={formData.location}
+                    id="lokasi"
+                    name="lokasi"
+                    value={formData.lokasi}
                     onChange={handleInputChange}
                     required
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="province">Province</Label>
+                  <Label htmlFor="province">Provinsi</Label>
                   <Select
                     value={formData.province}
                     onValueChange={handleProvinceChange}
                     required
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a province" />
+                      <SelectValue placeholder="Pilih provinsi" />
                     </SelectTrigger>
                     <SelectContent>
                       {mockProvinces.map((province) => (
@@ -507,15 +636,15 @@ export default function EventManagement() {
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="region">Region</Label>
+                  <Label htmlFor="region">Daerah</Label>
                   <Select
                     value={formData.region}
                     onValueChange={handleRegionChange}
-                    disabled={!formData.province}
+                    disabled={!formData.province || availableRegions.length === 0}
                     required
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a region" />
+                      <SelectValue placeholder="Pilih daerah" />
                     </SelectTrigger>
                     <SelectContent>
                       {availableRegions.map((region) => (
@@ -527,34 +656,33 @@ export default function EventManagement() {
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="deskripsi">Deskripsi</Label>
                   <Textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
+                    id="deskripsi"
+                    name="deskripsi"
+                    value={formData.deskripsi}
                     onChange={handleInputChange}
                     rows={4}
                     required
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="image">Image URL</Label>
+                  <Label htmlFor="gambar">Gambar Event</Label>
                   <Input
-                    id="image"
-                    name="image"
-                    value={formData.image}
+                    id="gambar"
+                    name="gambar"
+                    type="file"
                     onChange={handleInputChange}
-                    placeholder="/placeholder.svg?height=100&width=100"
-                    required
+                    // required={!selectedEvent} // Hanya wajib jika menambah baru
                   />
-                  {formData.image && (
+                  {(formData.gambarPreview || (selectedEvent && selectedEvent.gambar)) && (
                     <div className="mt-2">
                       <p className="text-sm text-muted-foreground mb-1">
-                        Preview:
+                        Pratinjau:
                       </p>
                       <img
-                        src={formData.image || "/placeholder.svg"}
-                        alt="Preview"
+                        src={formData.gambarPreview || selectedEvent?.gambar || "/placeholder.svg"}
+                        alt="Pratinjau"
                         className="h-20 w-20 rounded-md object-cover"
                       />
                     </div>
@@ -563,7 +691,7 @@ export default function EventManagement() {
               </div>
               <DialogFooter>
                 <Button type="submit">
-                  {selectedEvent ? "Save Changes" : "Add Event"}
+                  {selectedEvent ? "Simpan Perubahan" : "Tambah Event"}
                 </Button>
               </DialogFooter>
             </form>
@@ -574,11 +702,11 @@ export default function EventManagement() {
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Confirm Deletion</DialogTitle>
+              <DialogTitle>Konfirmasi Penghapusan</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete{" "}
-                <span className="font-medium">{selectedEvent?.name}</span>? This
-                action cannot be undone.
+                Apakah Anda yakin ingin menghapus{" "}
+                <span className="font-medium">{selectedEvent?.nama}</span>?
+                Tindakan ini tidak dapat dibatalkan.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -586,10 +714,10 @@ export default function EventManagement() {
                 variant="outline"
                 onClick={() => setIsDeleteDialogOpen(false)}
               >
-                Cancel
+                Batal
               </Button>
               <Button variant="destructive" onClick={confirmDelete}>
-                Delete
+                Hapus
               </Button>
             </DialogFooter>
           </DialogContent>
