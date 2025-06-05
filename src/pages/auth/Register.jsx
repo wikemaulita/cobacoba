@@ -1,13 +1,14 @@
 // src/pages/auth/Register.jsx
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
 import { useToast } from '@/hooks/use-toast'; // Import useToast
 
 const Register = () => {
-  const navigate = useNavigate();
+  const { registerUser } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    name: '', // Asumsi backend butuh nama juga untuk register
+    name: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -21,7 +22,7 @@ const Register = () => {
     });
   };
 
-  const handleSubmit = async (e) => { // Tambahkan async
+  const handleSubmit = async (e) => { // Pastikan ada 'async' di sini
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
@@ -35,46 +36,18 @@ const Register = () => {
 
     setLoading(true);
 
-    try {
-      // GANTILAH DENGAN ENDPOINT REGISTER YANG BENAR DARI BACKEND ANDA
-      // Asumsi: endpoint register adalah POST http://localhost:3000/users/register
-      // Asumsi: payloadnya adalah { username, email, password }
-      const response = await fetch('http://localhost:3000/users/register', { // Ganti URL jika berbeda
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: formData.name, // Asumsi nama di map ke username backend
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+    const success = await registerUser(formData.name, formData.email, formData.password);
 
-      const data = await response.json();
+    setLoading(false);
 
-      if (response.ok) {
-        toast({
-          title: "Pendaftaran Berhasil",
-          description: "Akun Anda berhasil dibuat. Silakan login.",
-        });
-        navigate('/login'); // Arahkan ke halaman login setelah register berhasil
-      } else {
-        toast({
-          title: "Pendaftaran Gagal",
-          description: data.message || "Terjadi kesalahan saat mendaftar. Silakan coba lagi.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error during registration:", error);
-      toast({
-        title: "Terjadi Kesalahan",
-        description: "Tidak dapat terhubung ke server. Silakan coba lagi nanti.",
-        variant: "destructive",
+    if (success) {
+      // Opsional: reset form setelah sukses jika tidak langsung navigate
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
       });
-    } finally {
-      setLoading(false);
     }
   };
 
