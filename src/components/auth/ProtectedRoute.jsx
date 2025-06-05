@@ -1,10 +1,10 @@
 // src/components/auth/ProtectedRoute.jsx
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext'; //
+import { useAuth } from '@/contexts/AuthContext';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isLoggedIn, user } = useAuth(); //
+  const { isLoggedIn, user } = useAuth();
 
   if (!isLoggedIn) {
     // Jika tidak login, arahkan ke halaman login

@@ -1,14 +1,14 @@
 // src/components/Navbar.jsx
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
-import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
-// Import icons for social media (sudah ada)
+// Import icons for social media
 import { FaFacebook, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, user, logout } = useAuth(); // Gunakan useAuth hook
+  const { isLoggedIn, user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -76,14 +76,14 @@ const Navbar = () => {
               
               {isLoggedIn ? (
                 <>
-                  <button 
-                    onClick={handleDashboardClick} 
+                  <button
+                    onClick={handleDashboardClick}
                     className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300"
                   >
                     Dashboard
                   </button>
-                  <button 
-                    onClick={logout} 
+                  <button
+                    onClick={logout}
                     className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full font-medium transition duration-300"
                   >
                     Logout

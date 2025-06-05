@@ -1,12 +1,17 @@
+// src/pages/auth/Login.jsx
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
+import { useToast } from '@/hooks/use-toast'; // Import useToast
 
 const Login = () => {
-  const navigate = useNavigate();
+  const { login } = useAuth();
+  const { toast } = useToast(); // Menggunakan useToast di sini
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -15,21 +20,14 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => { // Pastikan ada 'async' di sini
     e.preventDefault();
-    console.log("Login form submitted:", formData);
-    if (formData.email.includes("daerah")) {
-      navigate("/admin-daerah/dashboard");
-    } else if (formData.email.includes("super")) {
-      navigate("/super-admin/dashboard");
-    } else {
-      navigate("/user/dashboard");
-    }
+    setLoading(true);
+    const success = await login(formData.email, formData.password);
+    setLoading(false);
+    
+    // Navigasi sekarang dihandle di AuthContext
   };
-
-  const success = await login(formData.email, formData.password);
-    console.log("Login success?", success);
-
 
   return (
     <div className="max-w-md mx-auto px-4 py-12 pt-24">
@@ -48,6 +46,7 @@ const Login = () => {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
+              disabled={loading}
             />
           </div>
           <div className="mb-6">
@@ -62,13 +61,15 @@ const Login = () => {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
+              disabled={loading}
             />
           </div>
           <button
-            onClick={handleSubmit}
+            type="submit"
             className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={loading}
           >
-            Login
+            {loading ? "Loading..." : "Login"}
           </button>
         </form>
         <p className="mt-4 text-center">

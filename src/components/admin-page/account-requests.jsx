@@ -1,3 +1,4 @@
+// src/components/admin-page/account-requests.jsx
 import { useState } from "react";
 import {
   Card,
@@ -34,6 +35,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Mock data for account requests
 const mockRequests = [
@@ -46,6 +48,9 @@ const mockRequests = [
     status: "pending",
     requestDate: "2023-05-15",
     details: "Request to manage cultural content for Bali region",
+    // Asumsi ada id_daerah/daerahId yang bisa diambil dari database untuk diset
+    daerahId: 1, // Contoh: asumsikan ID daerah untuk Bali
+    password: "passwordbaru123" // Asumsi password sementara/default untuk admin baru
   },
   {
     id: 2,
@@ -56,6 +61,8 @@ const mockRequests = [
     status: "pending",
     requestDate: "2023-05-16",
     details: "Request to manage cultural content for Yogyakarta region",
+    daerahId: 2, // Contoh: asumsikan ID daerah untuk Yogyakarta
+    password: "passwordbaru123"
   },
   {
     id: 3,
@@ -66,16 +73,20 @@ const mockRequests = [
     status: "pending",
     requestDate: "2023-05-17",
     details: "Request to manage cultural content for Bandung region",
+    daerahId: 3, // Contoh: asumsikan ID daerah untuk Jawa Barat
+    password: "passwordbaru123"
   },
 ];
 
 export default function AccountRequests() {
   const { toast } = useToast();
+  const { token } = useAuth();
   const [requests, setRequests] = useState(mockRequests);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [actionType, setActionType] = useState("");
+  const [loadingAction, setLoadingAction] = useState(false);
 
   const handleViewDetails = (request) => {
     setSelectedRequest(request);
@@ -88,28 +99,87 @@ export default function AccountRequests() {
     setConfirmDialogOpen(true);
   };
 
-  const confirmAction = () => {
-    const updatedRequests = requests.filter(
-      (req) => req.id !== selectedRequest.id
-    );
-    setRequests(updatedRequests);
+  const confirmAction = async () => {
+    setLoadingAction(true);
+    let success = false;
 
-    toast({
-      title: actionType === "approve" ? "Request Approved" : "Request Rejected",
-      description: `You have ${
-        actionType === "approve" ? "approved" : "rejected"
-      } the account request from ${selectedRequest.name}`,
-    });
+    if (!token) {
+      toast({
+        title: "Akses Ditolak",
+        description: "Anda tidak memiliki token otorisasi untuk melakukan tindakan ini.",
+        variant: "destructive",
+      });
+      setLoadingAction(false);
+      setConfirmDialogOpen(false);
+      return;
+    }
 
+    if (actionType === "approve") {
+      try {
+        const response = await fetch('http://localhost:3000/users/create-admin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            username: selectedRequest.name,
+            email: selectedRequest.email,
+            password: selectedRequest.password,
+            alamat: selectedRequest.details.split('for ')[1] || 'Alamat tidak tersedia',
+            daerahId: selectedRequest.daerahId
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          success = true;
+          toast({
+            title: "Request Disetujui",
+            description: `Akun admin untuk ${selectedRequest.name} berhasil dibuat.`,
+          });
+          const updatedRequests = requests.filter(
+            (req) => req.id !== selectedRequest.id
+          );
+          setRequests(updatedRequests);
+        } else {
+          toast({
+            title: "Persetujuan Gagal",
+            description: data.message || "Terjadi kesalahan saat membuat akun admin.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Error approving request:", error);
+        toast({
+          title: "Terjadi Kesalahan",
+          description: "Tidak dapat terhubung ke server untuk menyetujui permintaan.",
+          variant: "destructive",
+        });
+      }
+    } else if (actionType === "reject") {
+      const updatedRequests = requests.filter(
+        (req) => req.id !== selectedRequest.id
+      );
+      setRequests(updatedRequests);
+      success = true;
+      toast({
+        title: "Permintaan Ditolak",
+        description: `Permintaan akun dari ${selectedRequest.name} telah ditolak.`,
+      });
+    }
+
+    setLoadingAction(false);
     setConfirmDialogOpen(false);
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Account Requests</CardTitle>
+        <CardTitle>Permintaan Akun</CardTitle>
         <CardDescription>
-          Manage account creation requests from regional admins
+          Kelola permintaan pembuatan akun dari admin regional
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -117,7 +187,7 @@ export default function AccountRequests() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Total Requests
+                Total Permintaan
               </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -127,7 +197,7 @@ export default function AccountRequests() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
+              <CardTitle className="text-sm font-medium">Tertunda</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -138,7 +208,7 @@ export default function AccountRequests() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Approved</CardTitle>
+              <CardTitle className="text-sm font-medium">Disetujui</CardTitle>
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -147,7 +217,7 @@ export default function AccountRequests() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+              <CardTitle className="text-sm font-medium">Ditolak</CardTitle>
               <XCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -159,13 +229,13 @@ export default function AccountRequests() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead>Nama</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Region</TableHead>
-              <TableHead>Province</TableHead>
-              <TableHead>Request Date</TableHead>
+              <TableHead>Daerah</TableHead>
+              <TableHead>Provinsi</TableHead>
+              <TableHead>Tanggal Permintaan</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -196,6 +266,7 @@ export default function AccountRequests() {
                         size="icon"
                         className="text-green-600"
                         onClick={() => handleAction(request, "approve")}
+                        disabled={loadingAction}
                       >
                         <Check className="h-4 w-4" />
                       </Button>
@@ -204,6 +275,7 @@ export default function AccountRequests() {
                         size="icon"
                         className="text-red-600"
                         onClick={() => handleAction(request, "reject")}
+                        disabled={loadingAction}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -214,24 +286,24 @@ export default function AccountRequests() {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-4">
-                  No pending account requests
+                  Tidak ada permintaan akun yang tertunda
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
 
-        {/* Details Dialog */}
+        {/* Dialog Detail */}
         <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Request Details</DialogTitle>
+              <DialogTitle>Detail Permintaan</DialogTitle>
             </DialogHeader>
             {selectedRequest && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium">Name</p>
+                    <p className="text-sm font-medium">Nama</p>
                     <p className="text-sm">{selectedRequest.name}</p>
                   </div>
                   <div>
@@ -239,15 +311,15 @@ export default function AccountRequests() {
                     <p className="text-sm">{selectedRequest.email}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Region</p>
+                    <p className="text-sm font-medium">Daerah</p>
                     <p className="text-sm">{selectedRequest.region}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Province</p>
+                    <p className="text-sm font-medium">Provinsi</p>
                     <p className="text-sm">{selectedRequest.province}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Request Date</p>
+                    <p className="text-sm font-medium">Tanggal Permintaan</p>
                     <p className="text-sm">{selectedRequest.requestDate}</p>
                   </div>
                   <div>
@@ -258,14 +330,14 @@ export default function AccountRequests() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Details</p>
+                  <p className="text-sm font-medium">Detail</p>
                   <p className="text-sm">{selectedRequest.details}</p>
                 </div>
               </div>
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setDetailsOpen(false)}>
-                Close
+                Tutup
               </Button>
               <Button
                 variant="default"
@@ -274,8 +346,9 @@ export default function AccountRequests() {
                   setDetailsOpen(false);
                   handleAction(selectedRequest, "approve");
                 }}
+                disabled={loadingAction}
               >
-                Approve
+                Setujui
               </Button>
               <Button
                 variant="destructive"
@@ -283,34 +356,36 @@ export default function AccountRequests() {
                   setDetailsOpen(false);
                   handleAction(selectedRequest, "reject");
                 }}
+                disabled={loadingAction}
               >
-                Reject
+                Tolak
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Confirmation Dialog */}
+        {/* Dialog Konfirmasi */}
         <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
                 {actionType === "approve"
-                  ? "Approve Request"
-                  : "Reject Request"}
+                  ? "Setujui Permintaan"
+                  : "Tolak Permintaan"}
               </DialogTitle>
               <DialogDescription>
                 {actionType === "approve"
-                  ? "Are you sure you want to approve this account request? This will create a new admin account."
-                  : "Are you sure you want to reject this account request? This action cannot be undone."}
+                  ? "Apakah Anda yakin ingin menyetujui permintaan akun ini? Ini akan membuat akun admin baru."
+                  : "Apakah Anda yakin ingin menolak permintaan akun ini? Tindakan ini tidak dapat dibatalkan."}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button
                 variant="outline"
                 onClick={() => setConfirmDialogOpen(false)}
+                disabled={loadingAction}
               >
-                Cancel
+                Batal
               </Button>
               <Button
                 variant={actionType === "approve" ? "default" : "destructive"}
@@ -320,8 +395,9 @@ export default function AccountRequests() {
                     : ""
                 }
                 onClick={confirmAction}
+                disabled={loadingAction}
               >
-                {actionType === "approve" ? "Approve" : "Reject"}
+                {loadingAction ? "Memproses..." : (actionType === "approve" ? "Setujui" : "Tolak")}
               </Button>
             </DialogFooter>
           </DialogContent>

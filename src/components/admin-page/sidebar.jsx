@@ -15,13 +15,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-// import { useToast } from "@/hooks/use-toast"; // useToast diimpor di AuthContext
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Sidebar({ role }) {
-  // const { toast } = useToast(); // Tidak perlu lagi diimpor di sini
-  const { user, logout } = useAuth(); // Gunakan useAuth hook
+  const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,10 +90,8 @@ export default function Sidebar({ role }) {
     },
   ];
 
-  // Fungsi handleLogout sekarang memanggil fungsi logout dari AuthContext
   const handleLogout = () => {
-    logout(); //
-    // navigate("/"); // Navigasi sudah dihandle di AuthContext
+    logout();
   };
 
   return (
@@ -114,7 +110,7 @@ export default function Sidebar({ role }) {
                 : user.role === "ADMIN_DAERAH"
                   ? "Admin Daerah"
                   : null
-              : "Admin Panel"} {/* Tampilkan role dari user */}
+              : "Admin Panel"}
           </h1>
         )}
         <Button
@@ -129,12 +125,12 @@ export default function Sidebar({ role }) {
 
       <div className="flex flex-col flex-1 py-4 overflow-y-auto">
         <nav className="space-y-1 px-2">
-          {user && ( // Pastikan user ada sebelum render menu
+          {user && (
             (user.role === "SUPER_ADMIN"
               ? menuItemsSuperAdmin
               : user.role === "ADMIN_DAERAH"
                 ? menuItemsAdminDaerah
-                : [] // Kosongkan jika role tidak dikenal
+                : []
             ).map((item) => (
                 <Button
                   key={item.id}
@@ -160,7 +156,7 @@ export default function Sidebar({ role }) {
           <Avatar>
             <AvatarImage src="/placeholder-user.jpg" />
             <AvatarFallback>
-              {user ? user.username.charAt(0).toUpperCase() : "AD"} {/* Tampilkan inisial user */}
+              {user ? user.username.charAt(0).toUpperCase() : "AD"}
             </AvatarFallback>
           </Avatar>
           {!collapsed && (
@@ -172,9 +168,9 @@ export default function Sidebar({ role }) {
                     ? "Super Admin"
                     : role === "admin-daerah"
                       ? "Admin Daerah"
-                      : "Unknown User"} {/* Tampilkan username */}
+                      : "Unknown User"}
               </p>
-              <p className="text-xs text-muted-foreground">{user ? user.email : "admin@example.com"}</p> {/* Tampilkan email */}
+              <p className="text-xs text-muted-foreground">{user ? user.email : "admin@example.com"}</p>
             </div>
           )}
         </div>

@@ -1,7 +1,7 @@
 // src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast'; // Import useToast
+import { useToast } from '@/hooks/use-toast';
 
 const AuthContext = createContext(null);
 
@@ -91,6 +91,51 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // --- Fungsi Baru: registerUser ---
+  const registerUser = async (username, email, password) => {
+    try {
+      // Asumsi endpoint register-user tidak memerlukan token untuk pendaftaran publik.
+      // Jika backend Anda memaksakannya, Anda perlu klarifikasi atau menyesuaikan.
+      const response = await fetch('http://localhost:3000/users/register-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Jika backend memang perlu token, Anda harus mendapatkannya dari suatu tempat (misal: guest token atau admin token)
+          // Contoh: 'Authorization': `Bearer ${someAdminToken}`
+        },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Pendaftaran Berhasil",
+          description: data.message || "Akun Anda berhasil dibuat. Silakan login.",
+        });
+        navigate('/login'); // Arahkan ke halaman login setelah register berhasil
+        return true;
+      } else {
+        toast({
+          title: "Pendaftaran Gagal",
+          description: data.message || "Terjadi kesalahan saat mendaftar. Silakan coba lagi.",
+          variant: "destructive",
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error during registration:", error);
+      toast({
+        title: "Terjadi Kesalahan",
+        description: "Tidak dapat terhubung ke server. Silakan coba lagi nanti.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+  // --- Akhir Fungsi Baru ---
+
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -98,7 +143,7 @@ export const AuthProvider = ({ children }) => {
       title: "Logout Berhasil",
       description: "Anda telah berhasil keluar.",
     });
-    navigate('/login'); // Arahkan ke halaman login setelah logout
+    navigate('/login');
   };
 
   const authValue = {
@@ -107,6 +152,7 @@ export const AuthProvider = ({ children }) => {
     isLoggedIn,
     login,
     logout,
+    registerUser, // Tambahkan registerUser ke nilai context
   };
 
   return (
@@ -116,7 +162,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook untuk menggunakan AuthContext
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
