@@ -29,125 +29,208 @@ import {
   Share2,
   Star,
 } from "lucide-react";
-import { mockEvents } from "@/lib/mock-data";
 import RatingStars from "@/components/user/rating-stars";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
-// Mock review data
-const mockReviews = [
-  {
-    id: 1,
-    author: "John Doe",
-    avatar: "/placeholder.svg?height=50&width=50",
-    date: "2023-08-15",
-    rating: 5,
-    comment:
-      "This was an amazing event! The cultural performances were spectacular and I learned a lot about the local traditions.",
-    likes: 12,
-  },
-  {
-    id: 2,
-    author: "Jane Smith",
-    avatar: "/placeholder.svg?height=50&width=50",
-    date: "2023-08-12",
-    rating: 4,
-    comment:
-      "Truly enjoyed the experience. The venue was a bit crowded but the performances made up for it.",
-    likes: 8,
-  },
-  {
-    id: 3,
-    author: "Michael Johnson",
-    avatar: "/placeholder.svg?height=50&width=50",
-    date: "2023-08-10",
-    rating: 5,
-    comment:
-      "One of the best cultural events I've attended. Highly recommended for anyone interested in Indonesian culture!",
-    likes: 15,
-  },
-];
+// Import API functions
+import {
+  getEventDetail,
+  getEventRatings,
+  getAverageRating,
+  getUserRatingForEvent,
+  joinEvent,
+  submitUserRating,
+  deleteRatingParticipation, // Asumsi ini juga berfungsi untuk membatalkan bergabung/ulasan
+} from '@/lib/api';
 
 export default function EventDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth(); // Menggunakan user untuk pengecekan login
   const [event, setEvent] = useState(null);
   const [isJoined, setIsJoined] = useState(false);
   const [isRatingOpen, setIsRatingOpen] = useState(false);
   const [userRating, setUserRating] = useState(0);
   const [userComment, setUserComment] = useState("");
-  const [reviews, setReviews] = useState(mockReviews);
+  const [reviews, setReviews] = useState([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch event data
-    const eventId = Number(params.id);
-    const foundEvent = mockEvents.find((e) => e.id === eventId);
+    const fetchEventData = async () => {
+      try {
+        setLoading(true);
+        const eventId = Number(params.id);
 
-    if (foundEvent) {
-      setEvent(foundEvent);
-    } else {
-      navigate("/user/events");
+        const eventResponse = await getEventDetail(eventId);
+        setEvent(eventResponse.data);
+
+        const reviewsResponse = await getEventRatings(eventId);
+        setReviews(reviewsResponse.data);
+
+        const averageRatingResponse = await getAverageRating(eventId);
+        setAverageRating(averageRatingResponse.data.averageRating || 0);
+        setReviewCount(averageRatingResponse.data.reviewCount || 0);
+
+        // Cek apakah pengguna sudah bergabung/memberi rating (hanya jika sudah login)
+        if (user) {
+            try {
+                const userRatingResponse = await getUserRatingForEvent(eventId);
+                if (userRatingResponse.data.hasRated) {
+                    setUserRating(userRatingResponse.data.rating.rating);
+                    setUserComment(userRatingResponse.data.rating.comment || "");
+                    setIsJoined(true); // Asumsi jika sudah memberi rating, berarti sudah bergabung
+                } else if (userRatingResponse.data.isJoined) { // Cek jika backend juga mengirim status isJoined secara terpisah
+                    setIsJoined(true);
+                }
+            } catch (userCheckError) {
+                // Ini bisa berarti pengguna belum memberi rating/bergabung, tidak masalah
+                console.log("Pengguna belum memberi rating/bergabung dengan event ini atau terjadi kesalahan saat mengambil status pengguna:", userCheckError.response?.data?.message);
+                setIsJoined(false);
+            }
+        } else {
+            setIsJoined(false); // Jika tidak ada user, berarti belum bergabung
+            setUserRating(0); // Reset rating jika tidak ada user
+            setUserComment(""); // Reset komentar jika tidak ada user
+        }
+
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Gagal memuat detail event:", err);
+        setError("Gagal memuat detail event. Mungkin event tidak ditemukan atau ada masalah server.");
+        setLoading(false);
+      }
+    };
+
+    fetchEventData();
+  }, [params.id, user, navigate]);
+
+  const handleJoinEvent = async () => {
+    if (!user) { // Pengecekan Autentikasi
+        toast({
+            title: "Login Diperlukan",
+            description: "Anda perlu login untuk bergabung dengan event ini.",
+            variant: "destructive",
+            action: {
+                label: "Login",
+                onClick: () => navigate('/login'),
+            },
+        });
+        return;
     }
-  }, [params.id, navigate]);
 
-  const handleJoinEvent = () => {
-    setIsJoined(!isJoined);
-
-    if (!isJoined) {
-      toast({
-        title: "Event Joined",
-        description: "You have successfully joined this event",
-      });
-    } else {
-      toast({
-        title: "Event Left",
-        description: "You have left this event",
-      });
+    try {
+        if (!isJoined) {
+            await joinEvent(event.id, user.id); // Panggil API untuk bergabung
+            setIsJoined(true);
+            toast({
+                title: "Event Berhasil Diikuti",
+                description: "Anda telah berhasil bergabung dengan event ini!",
+            });
+        } else {
+            await deleteRatingParticipation(event.id); // Panggil API untuk membatalkan bergabung
+            setIsJoined(false);
+            toast({
+                title: "Berhasil Meninggalkan Event",
+                description: "Anda telah meninggalkan event ini.",
+            });
+        }
+        // Opsional: Muat ulang detail event untuk memperbarui jumlah peserta jika diperlukan
+        const eventResponse = await getEventDetail(Number(params.id));
+        setEvent(eventResponse.data);
+    } catch (err) {
+        console.error("Gagal mengubah status bergabung:", err);
+        toast({
+            title: "Aksi Gagal",
+            description: err.response?.data?.message || "Tidak dapat memperbarui status bergabung. Silakan coba lagi.",
+            variant: "destructive",
+        });
     }
   };
 
-  const handleSubmitRating = () => {
+  const handleSubmitRating = async () => {
+    if (!user) { // Pengecekan Autentikasi
+        toast({
+            title: "Login Diperlukan",
+            description: "Anda perlu login untuk mengirim ulasan.",
+            variant: "destructive",
+            action: {
+                label: "Login",
+                onClick: () => navigate('/login'),
+            },
+        });
+        return;
+    }
+
     if (userRating === 0) {
       toast({
-        title: "Rating Required",
-        description: "Please select a rating before submitting",
+        title: "Rating Diperlukan",
+        description: "Silakan pilih rating sebelum mengirim.",
         variant: "destructive",
       });
       return;
     }
 
-    const newReview = {
-      id: reviews.length + 1,
-      author: "You",
-      avatar: "/placeholder.svg?height=50&width=50",
-      date: new Date().toISOString().split("T")[0],
-      rating: userRating,
-      comment: userComment,
-      likes: 0,
-    };
+    try {
+        await submitUserRating({ // Panggil API untuk mengirim rating
+            eventId: event.id,
+            userId: user.id, // Pastikan userId dikirim atau diturunkan oleh backend dari token
+            rating: userRating,
+            comment: userComment,
+        });
+        toast({
+            title: "Ulasan Terkirim",
+            description: "Terima kasih telah berbagi pengalaman Anda!",
+        });
+        setUserRating(0); // Reset form
+        setUserComment(""); // Reset form
+        setIsRatingOpen(false); // Tutup dialog
 
-    setReviews([newReview, ...reviews]);
-    setUserRating(0);
-    setUserComment("");
-    setIsRatingOpen(false);
-
-    toast({
-      title: "Review Submitted",
-      description: "Thank you for sharing your experience!",
-    });
+        // Muat ulang ulasan dan rating rata-rata untuk memperbarui UI
+        const reviewsResponse = await getEventRatings(event.id);
+        setReviews(reviewsResponse.data);
+        const averageRatingResponse = await getAverageRating(event.id);
+        setAverageRating(averageRatingResponse.data.averageRating || 0);
+        setReviewCount(averageRatingResponse.data.reviewCount || 0);
+    } catch (err) {
+        console.error("Gagal mengirim ulasan:", err);
+        toast({
+            title: "Pengiriman Gagal",
+            description: err.response?.data?.message || "Tidak dapat mengirim ulasan Anda. Silakan coba lagi.",
+            variant: "destructive",
+        });
+    }
   };
 
   const handleLikeReview = (reviewId) => {
+    // Fungsionalitas ini memerlukan endpoint backend untuk menyukai ulasan
+    // Untuk saat ini, tetap sebagai pembaruan mock lokal untuk menunjukkan interaksi
     const updatedReviews = reviews.map((review) =>
-      review.id === reviewId ? { ...review, likes: review.likes + 1 } : review
+      review.id === reviewId ? { ...review, likes: (review.likes || 0) + 1 } : review
     );
-
     setReviews(updatedReviews);
+    toast({
+        title: "Ulasan Disukai",
+        description: "Anda menemukan ulasan ini membantu!",
+    });
   };
 
+  if (loading) {
+    return <div className="text-center py-10">Memuat detail event...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  }
+
   if (!event) {
-    return <div>Loading...</div>;
+    return <div className="text-center py-10">Event tidak ditemukan.</div>;
   }
 
   return (
@@ -157,7 +240,7 @@ export default function EventDetailPage() {
         className="flex items-center gap-1 -ml-2"
         onClick={() => navigate(-1)}
       >
-        <ArrowLeft className="h-4 w-4" /> Back to Events
+        <ArrowLeft className="h-4 w-4" /> Kembali ke Events
       </Button>
 
       <div className="relative rounded-lg overflow-hidden h-[300px] md:h-[400px]">
@@ -178,7 +261,7 @@ export default function EventDetailPage() {
               {event.region}, {event.province}
             </div>
             <div className="flex items-center">
-              <Users className="h-4 w-4 mr-2" /> {event.attendees || "86"}{" "}
+              <Users className="h-4 w-4 mr-2" /> {event.attendees || "N/A"}{" "}
               attending
             </div>
           </div>
@@ -187,13 +270,13 @@ export default function EventDetailPage() {
               className={isJoined ? "bg-green-600 hover:bg-green-700" : ""}
               onClick={handleJoinEvent}
             >
-              {isJoined ? "Joined" : "Join Event"}
+              {isJoined ? "Bergabung" : "Gabung Event"}
             </Button>
             <Button
               variant="outline"
               className="bg-white/10 text-white border-white/20"
             >
-              <Share2 className="h-4 w-4 mr-2" /> Share
+              <Share2 className="h-4 w-4 mr-2" /> Bagikan
             </Button>
             <Dialog open={isRatingOpen} onOpenChange={setIsRatingOpen}>
               <DialogTrigger asChild>
@@ -201,20 +284,20 @@ export default function EventDetailPage() {
                   variant="outline"
                   className="bg-white/10 text-white border-white/20"
                 >
-                  <Star className="h-4 w-4 mr-2" /> Rate Event
+                  <Star className="h-4 w-4 mr-2" /> Beri Rating
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Rate this Event</DialogTitle>
+                  <DialogTitle>Beri Rating Event ini</DialogTitle>
                   <DialogDescription>
-                    Share your experience about "{event.name}"
+                    Bagikan pengalaman Anda tentang "{event.name}"
                   </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                   <div className="flex flex-col items-center space-y-2">
                     <p className="text-center text-sm font-medium">
-                      Your Rating
+                      Rating Anda
                     </p>
                     <RatingStars
                       rating={userRating}
@@ -224,10 +307,10 @@ export default function EventDetailPage() {
                   </div>
                   <div className="space-y-2">
                     <p className="text-sm font-medium">
-                      Your Review (Optional)
+                      Ulasan Anda (Opsional)
                     </p>
                     <Textarea
-                      placeholder="Share your experience about this event..."
+                      placeholder="Bagikan pengalaman Anda tentang event ini..."
                       value={userComment}
                       onChange={(e) => setUserComment(e.target.value)}
                       rows={4}
@@ -239,9 +322,9 @@ export default function EventDetailPage() {
                     variant="outline"
                     onClick={() => setIsRatingOpen(false)}
                   >
-                    Cancel
+                    Batal
                   </Button>
-                  <Button onClick={handleSubmitRating}>Submit Rating</Button>
+                  <Button onClick={handleSubmitRating}>Kirim Rating</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -251,60 +334,58 @@ export default function EventDetailPage() {
 
       <Tabs defaultValue="details" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
-          <TabsTrigger value="related">Related</TabsTrigger>
+          <TabsTrigger value="details">Detail</TabsTrigger>
+          <TabsTrigger value="reviews">Ulasan ({reviewCount})</TabsTrigger>
+          <TabsTrigger value="related">Terkait</TabsTrigger>
         </TabsList>
         <TabsContent value="details" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Event Description</CardTitle>
+              <CardTitle>Deskripsi Event</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="whitespace-pre-line">
                 {event.description}
-                {/* Extend the description for a more comprehensive view */}
                 {"\n\n"}
-                Join us for an unforgettable cultural experience at {event.name}
-                . This event celebrates the rich cultural heritage of{" "}
-                {event.region} in {event.province}.{"\n\n"}
-                You will have the opportunity to witness traditional
-                performances, participate in interactive cultural activities,
-                and enjoy authentic local cuisine. This event is perfect for
-                families, tourists, and anyone interested in learning more about
-                Indonesia's diverse cultural landscape.
+                Bergabunglah bersama kami untuk pengalaman budaya yang tak terlupakan di {event.name}
+                . Event ini merayakan warisan budaya yang kaya dari{" "}
+                {event.region} di {event.province}.{"\n\n"}
+                Anda akan memiliki kesempatan untuk menyaksikan pertunjukan tradisional, berpartisipasi dalam aktivitas budaya interaktif,
+                dan menikmati kuliner lokal otentik. Event ini sempurna untuk
+                keluarga, wisatawan, dan siapa saja yang tertarik untuk belajar lebih banyak tentang
+                lanskap budaya Indonesia yang beragam.
                 {"\n\n"}
-                Don't miss this chance to immerse yourself in the beauty and
-                richness of Indonesian culture!
+                Jangan lewatkan kesempatan ini untuk membenamkan diri dalam keindahan dan
+                kekayaan budaya Indonesia!
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Event Details</CardTitle>
+              <CardTitle>Detail Event</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <h3 className="font-medium text-sm mb-1">Date & Time</h3>
+                  <h3 className="font-medium text-sm mb-1">Tanggal & Waktu</h3>
                   <p>{event.date} • 10:00 AM - 6:00 PM</p>
                 </div>
                 <div>
-                  <h3 className="font-medium text-sm mb-1">Location</h3>
+                  <h3 className="font-medium text-sm mb-1">Lokasi</h3>
                   <p>
                     {event.location}, {event.region}, {event.province}
                   </p>
                 </div>
                 <div>
-                  <h3 className="font-medium text-sm mb-1">Organizer</h3>
-                  <p>Cultural Department of {event.province}</p>
+                  <h3 className="font-medium text-sm mb-1">Penyelenggara</h3>
+                  <p>Dinas Kebudayaan {event.province}</p>
                 </div>
                 <div>
-                  <h3 className="font-medium text-sm mb-1">Category</h3>
-                  <Badge variant="outline">Cultural</Badge>
+                  <h3 className="font-medium text-sm mb-1">Kategori</h3>
+                  <Badge variant="outline">Budaya</Badge>
                   <Badge variant="outline" className="ml-2">
-                    Exhibition
+                    Pameran
                   </Badge>
                 </div>
               </div>
@@ -313,14 +394,14 @@ export default function EventDetailPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Location</CardTitle>
+              <CardTitle>Lokasi</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="rounded-md overflow-hidden h-[300px] bg-muted flex items-center justify-center">
                 <div className="text-center p-4">
                   <MapPin className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-muted-foreground">
-                    Map view for {event.location}, {event.region},{" "}
+                    Tampilan peta untuk {event.location}, {event.region},{" "}
                     {event.province}
                   </p>
                 </div>
@@ -332,71 +413,77 @@ export default function EventDetailPage() {
         <TabsContent value="reviews" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Event Ratings & Reviews</CardTitle>
+              <CardTitle>Rating & Ulasan Event</CardTitle>
               <CardDescription>
-                See what others are saying about this event
+                Lihat apa kata orang lain tentang event ini
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center mb-6">
                 <div className="flex-1 space-y-1">
                   <div className="flex items-baseline">
-                    <span className="text-4xl font-bold mr-2">4.7</span>
+                    <span className="text-4xl font-bold mr-2">{averageRating.toFixed(1)}</span>
                     <span className="text-sm text-muted-foreground">
-                      out of 5
+                      dari 5
                     </span>
                   </div>
-                  <RatingStars rating={4.7} />
+                  <RatingStars rating={averageRating} />
                   <p className="text-sm text-muted-foreground">
-                    Based on {reviews.length} reviews
+                    Berdasarkan {reviewCount} ulasan
                   </p>
                 </div>
                 <div className="md:flex-1">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setIsRatingOpen(true)}
-                  >
-                    <Star className="h-4 w-4 mr-2" /> Write a Review
-                  </Button>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setIsRatingOpen(true)}
+                    >
+                      <Star className="h-4 w-4 mr-2" /> Tulis Ulasan
+                    </Button>
+                  </DialogTrigger>
                 </div>
               </div>
 
               <div className="space-y-6">
-                {reviews.map((review) => (
-                  <div key={review.id} className="border-b pb-6 last:border-0">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center">
-                        <Avatar className="h-8 w-8 mr-2">
-                          <AvatarImage
-                            src={review.avatar || "/placeholder.svg"}
-                            alt={review.author}
-                          />
-                          <AvatarFallback>
-                            {review.author.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-sm">{review.author}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {review.date}
-                          </p>
+                {reviews.length > 0 ? (
+                    reviews.map((review) => (
+                        <div key={review.id} className="border-b pb-6 last:border-0">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center">
+                                    <Avatar className="h-8 w-8 mr-2">
+                                        <AvatarImage
+                                            src={review.avatar || "/placeholder.svg"}
+                                            alt={review.username}
+                                        />
+                                        <AvatarFallback>
+                                            {review.username.charAt(0).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-medium text-sm">{review.username}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {new Date(review.createdAt).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                </div>
+                                <RatingStars rating={review.rating} />
+                            </div>
+                            <p className="text-sm mb-3">{review.comment}</p>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs h-8"
+                                onClick={() => handleLikeReview(review.id)}
+                            >
+                                <ThumbsUp className="h-3 w-3 mr-1" /> {review.likes || 0}{" "}
+                                Membantu
+                            </Button>
                         </div>
-                      </div>
-                      <RatingStars rating={review.rating} />
-                    </div>
-                    <p className="text-sm mb-3">{review.comment}</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs h-8"
-                      onClick={() => handleLikeReview(review.id)}
-                    >
-                      <ThumbsUp className="h-3 w-3 mr-1" /> {review.likes}{" "}
-                      Helpful
-                    </Button>
-                  </div>
-                ))}
+                    ))
+                ) : (
+                    <p className="text-center text-muted-foreground py-10">Belum ada ulasan. Jadilah yang pertama memberikan ulasan!</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -405,49 +492,14 @@ export default function EventDetailPage() {
         <TabsContent value="related" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Related Events</CardTitle>
+              <CardTitle>Event Terkait</CardTitle>
               <CardDescription>
-                Other events you might be interested in
+                Event lain yang mungkin Anda minati
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">
-                {mockEvents
-                  .filter((e) => e.id !== event.id)
-                  .slice(0, 3)
-                  .map((relatedEvent) => (
-                    <Card
-                      key={relatedEvent.id}
-                      className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                      onClick={() =>
-                        navigate(`/user/events/${relatedEvent.id}`)
-                      }
-                    >
-                      <div className="h-32 relative">
-                        <img
-                          src={
-                            relatedEvent.image ||
-                            "/placeholder.svg?height=200&width=400"
-                          }
-                          alt={relatedEvent.name}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <CardContent className="p-3">
-                        <h4 className="font-medium line-clamp-1">
-                          {relatedEvent.name}
-                        </h4>
-                        <div className="flex items-center text-xs text-muted-foreground mt-1">
-                          <Calendar className="h-3 w-3 mr-1" />{" "}
-                          {relatedEvent.date}
-                        </div>
-                        <div className="flex items-center text-xs text-muted-foreground mt-1">
-                          <MapPin className="h-3 w-3 mr-1" />{" "}
-                          {relatedEvent.region}, {relatedEvent.province}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <p className="col-span-full text-center text-muted-foreground">Event terkait akan dimuat di sini.</p>
               </div>
             </CardContent>
           </Card>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+// src/components/admin-page/region-management.jsx
+import { useState, useEffect } from "react"; // Corrected import statement
 import {
   Card,
   CardContent,
@@ -34,67 +35,56 @@ import {
 } from "@/components/ui/select";
 import { Pencil, Plus, Trash2, MapPin, Map, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-const mockRegions = [
-  {
-    id: 1,
-    name: "Denpasar",
-    image: "/placeholder.svg?height=100&width=100",
-    province: "Bali",
-  },
-  {
-    id: 2,
-    name: "Kuta",
-    image: "/placeholder.svg?height=100&width=100",
-    province: "Bali",
-  },
-  {
-    id: 3,
-    name: "Yogyakarta City",
-    image: "/placeholder.svg?height=100&width=100",
-    province: "DI Yogyakarta",
-  },
-  {
-    id: 4,
-    name: "Bandung",
-    image: "/placeholder.svg?height=100&width=100",
-    province: "Jawa Barat",
-  },
-  {
-    id: 5,
-    name: "Surabaya",
-    image: "/placeholder.svg?height=100&width=100",
-    province: "Jawa Timur",
-  },
-];
-
-// Mock data for provinces (for dropdown)
-const mockProvinces = [
-  { id: 1, name: "Bali" },
-  { id: 2, name: "DI Yogyakarta" },
-  { id: 3, name: "Jawa Barat" },
-  { id: 4, name: "Jawa Tengah" },
-  { id: 5, name: "Jawa Timur" },
-];
+// Import API functions
+import { getRegions, getProvinces, createRegion, updateRegion, deleteRegion } from '@/lib/api';
 
 export default function RegionManagement() {
   const { toast } = useToast();
-  const [regions, setRegions] = useState(mockRegions);
+  const [regions, setRegions] = useState([]); // State for regions
+  const [provinces, setProvinces] = useState([]); // State for provinces for dropdown
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     image: "",
-    province: "",
+    provinceId: "", // Store province ID instead of name
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchRegionsAndProvinces = async () => {
+    try {
+      setLoading(true);
+      const [regionsResponse, provincesResponse] = await Promise.all([
+        getRegions(),
+        getProvinces()
+      ]);
+      // Map region data to include province name for display
+      const regionsData = regionsResponse.data.map(region => ({
+        ...region,
+        provinceName: provincesResponse.data.find(p => p.id === region.provinceId)?.name || 'Unknown Province'
+      }));
+      setRegions(regionsData);
+      setProvinces(provincesResponse.data);
+      setLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch regions or provinces:", err);
+      setError("Failed to load regions or provinces. Please try again later.");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRegionsAndProvinces();
+  }, []);
 
   const handleAddNew = () => {
     setSelectedRegion(null);
     setFormData({
       name: "",
       image: "",
-      province: "",
+      provinceId: "",
     });
     setIsDialogOpen(true);
   };
@@ -104,7 +94,7 @@ export default function RegionManagement() {
     setFormData({
       name: region.name,
       image: region.image,
-      province: region.province,
+      provinceId: region.provinceId, // Use province ID
     });
     setIsDialogOpen(true);
   };
@@ -122,53 +112,69 @@ export default function RegionManagement() {
     }));
   };
 
-  const handleSelectChange = (value) => {
+  const handleProvinceSelectChange = (value) => {
     setFormData((prev) => ({
       ...prev,
-      province: value,
+      provinceId: Number(value), // Convert to number if IDs are numbers
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (selectedRegion) {
-      // Edit existing region
-      const updatedRegions = regions.map((region) =>
-        region.id === selectedRegion.id ? { ...region, ...formData } : region
-      );
-      setRegions(updatedRegions);
+    try {
+      if (selectedRegion) {
+        // Edit existing region
+        await updateRegion(selectedRegion.id, formData);
+        toast({
+          title: "Region Updated",
+          description: `${formData.name} has been updated successfully`,
+        });
+      } else {
+        // Add new region
+        await createRegion(formData);
+        toast({
+          title: "Region Added",
+          description: `${formData.name} has been added successfully`,
+        });
+      }
+      fetchRegionsAndProvinces(); // Re-fetch data to update the table
+      setIsDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to save region:", err);
       toast({
-        title: "Region Updated",
-        description: `${formData.name} has been updated successfully`,
-      });
-    } else {
-      // Add new region
-      const newRegion = {
-        id: regions.length + 1,
-        ...formData,
-      };
-      setRegions([...regions, newRegion]);
-      toast({
-        title: "Region Added",
-        description: `${formData.name} has been added successfully`,
+        title: "Operation Failed",
+        description: err.response?.data?.message || "Failed to save region. Please try again.",
+        variant: "destructive",
       });
     }
-
-    setIsDialogOpen(false);
   };
 
-  const confirmDelete = () => {
-    const updatedRegions = regions.filter(
-      (region) => region.id !== selectedRegion.id
-    );
-    setRegions(updatedRegions);
-    toast({
-      title: "Region Deleted",
-      description: `${selectedRegion.name} has been deleted successfully`,
-    });
-    setIsDeleteDialogOpen(false);
+  const confirmDelete = async () => {
+    try {
+      await deleteRegion(selectedRegion.id);
+      toast({
+        title: "Region Deleted",
+        description: `${selectedRegion.name} has been deleted successfully`,
+      });
+      fetchRegionsAndProvinces(); // Re-fetch data to update the table
+      setIsDeleteDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to delete region:", err);
+      toast({
+        title: "Deletion Failed",
+        description: err.response?.data?.message || "Failed to delete region. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return <div className="text-center py-10">Loading regions...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  }
 
   return (
     <Card>
@@ -204,9 +210,9 @@ export default function RegionManagement() {
               <Map className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5</div>
+              <div className="text-2xl font-bold">{provinces.length}</div>
               <p className="text-xs text-muted-foreground">
-                All provinces have regions
+                All provinces represented
               </p>
             </CardContent>
           </Card>
@@ -218,8 +224,8 @@ export default function RegionManagement() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Surabaya</div>
-              <p className="text-xs text-muted-foreground">3.1M population</p>
+              <div className="text-2xl font-bold">N/A</div> {/* Needs specific API or aggregation */}
+              <p className="text-xs text-muted-foreground">Data from backend</p>
             </CardContent>
           </Card>
         </div>
@@ -234,38 +240,46 @@ export default function RegionManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {regions.map((region) => (
-              <TableRow key={region.id}>
-                <TableCell>
-                  <img
-                    src={region.image || "/placeholder.svg"}
-                    alt={region.name}
-                    className="h-10 w-10 rounded-md object-cover"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">{region.name}</TableCell>
-                <TableCell>{region.province}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleEdit(region)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="text-red-600"
-                      onClick={() => handleDelete(region)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {regions.length > 0 ? (
+              regions.map((region) => (
+                <TableRow key={region.id}>
+                  <TableCell>
+                    <img
+                      src={region.image || "/placeholder.svg"}
+                      alt={region.name}
+                      className="h-10 w-10 rounded-md object-cover"
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{region.name}</TableCell>
+                  <TableCell>{region.provinceName}</TableCell> {/* Display province name */}
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEdit(region)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-red-600"
+                        onClick={() => handleDelete(region)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-4">
+                  No regions found.
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
 
@@ -297,16 +311,16 @@ export default function RegionManagement() {
                 <div className="grid gap-2">
                   <Label htmlFor="province">Province</Label>
                   <Select
-                    value={formData.province}
-                    onValueChange={handleSelectChange}
+                    value={String(formData.provinceId)} // Convert to string for Select component
+                    onValueChange={handleProvinceSelectChange}
                     required
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a province" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockProvinces.map((province) => (
-                        <SelectItem key={province.id} value={province.name}>
+                      {provinces.map((province) => (
+                        <SelectItem key={province.id} value={String(province.id)}>
                           {province.name}
                         </SelectItem>
                       ))}
@@ -325,52 +339,52 @@ export default function RegionManagement() {
                   />
                   {formData.image && (
                     <div className="mt-2">
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Preview:
-                      </p>
-                      <img
-                        src={formData.image || "/placeholder.svg"}
-                        alt="Preview"
-                        className="h-20 w-20 rounded-md object-cover"
-                      />
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Preview:
+                          </p>
+                          <img
+                            src={formData.image || "/placeholder.svg"}
+                            alt="Preview"
+                            className="h-20 w-20 rounded-md object-cover"
+                          />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">
-                  {selectedRegion ? "Save Changes" : "Add Region"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit">
+                      {selectedRegion ? "Save Changes" : "Add Region"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Deletion</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete{" "}
-                <span className="font-medium">{selectedRegion?.name}</span>?
-                This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsDeleteDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={confirmDelete}>
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
-  );
-}
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Confirm Deletion</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete{" "}
+                    <span className="font-medium">{selectedRegion?.name}</span>?
+                    This action cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDeleteDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" onClick={confirmDelete}>
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
+      );
+    }

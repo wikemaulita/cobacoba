@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -27,39 +27,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pencil, Plus, Trash2, Map, MapPin, Landmark } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Mock data for provinces
-const mockProvinces = [
-  {
-    id: 1,
-    name: "Bali",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: 2,
-    name: "DI Yogyakarta",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: 3,
-    name: "Jawa Barat",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: 4,
-    name: "Jawa Tengah",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: 5,
-    name: "Jawa Timur",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-];
+// Import API functions
+import { getProvinces, createProvince, updateProvince, deleteProvince } from '@/lib/api';
 
 export default function ProvinceManagement() {
   const { toast } = useToast();
-  const [provinces, setProvinces] = useState(mockProvinces);
+  const [provinces, setProvinces] = useState([]); // State for provinces
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState(null);
@@ -67,6 +40,25 @@ export default function ProvinceManagement() {
     name: "",
     image: "",
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchProvinces = async () => {
+    try {
+      setLoading(true);
+      const response = await getProvinces();
+      setProvinces(response.data);
+      setLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch provinces:", err);
+      setError("Failed to load provinces. Please try again later.");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProvinces();
+  }, []);
 
   const handleAddNew = () => {
     setSelectedProvince(null);
@@ -99,48 +91,62 @@ export default function ProvinceManagement() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (selectedProvince) {
-      // Edit existing province
-      const updatedProvinces = provinces.map((province) =>
-        province.id === selectedProvince.id
-          ? { ...province, ...formData }
-          : province
-      );
-      setProvinces(updatedProvinces);
+    try {
+      if (selectedProvince) {
+        // Edit existing province
+        await updateProvince(selectedProvince.id, formData);
+        toast({
+          title: "Province Updated",
+          description: `${formData.name} has been updated successfully`,
+        });
+      } else {
+        // Add new province
+        await createProvince(formData);
+        toast({
+          title: "Province Added",
+          description: `${formData.name} has been added successfully`,
+        });
+      }
+      fetchProvinces(); // Re-fetch data to update the table
+      setIsDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to save province:", err);
       toast({
-        title: "Province Updated",
-        description: `${formData.name} has been updated successfully`,
-      });
-    } else {
-      // Add new province
-      const newProvince = {
-        id: provinces.length + 1,
-        ...formData,
-      };
-      setProvinces([...provinces, newProvince]);
-      toast({
-        title: "Province Added",
-        description: `${formData.name} has been added successfully`,
+        title: "Operation Failed",
+        description: err.response?.data?.message || "Failed to save province. Please try again.",
+        variant: "destructive",
       });
     }
-
-    setIsDialogOpen(false);
   };
 
-  const confirmDelete = () => {
-    const updatedProvinces = provinces.filter(
-      (province) => province.id !== selectedProvince.id
-    );
-    setProvinces(updatedProvinces);
-    toast({
-      title: "Province Deleted",
-      description: `${selectedProvince.name} has been deleted successfully`,
-    });
-    setIsDeleteDialogOpen(false);
+  const confirmDelete = async () => {
+    try {
+      await deleteProvince(selectedProvince.id);
+      toast({
+        title: "Province Deleted",
+        description: `${selectedProvince.name} has been deleted successfully`,
+      });
+      fetchProvinces(); // Re-fetch data to update the table
+      setIsDeleteDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to delete province:", err);
+      toast({
+        title: "Deletion Failed",
+        description: err.response?.data?.message || "Failed to delete province. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return <div className="text-center py-10">Loading provinces...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  }
 
   return (
     <Card>
@@ -168,6 +174,7 @@ export default function ProvinceManagement() {
               <div className="text-2xl font-bold">{provinces.length}</div>
             </CardContent>
           </Card>
+          {/* These cards would need separate API calls or aggregated data from backend */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -176,8 +183,8 @@ export default function ProvinceManagement() {
               <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Jawa Barat</div>
-              <p className="text-xs text-muted-foreground">6 regions</p>
+              <div className="text-2xl font-bold">N/A</div>
+              <p className="text-xs text-muted-foreground">Data from backend</p>
             </CardContent>
           </Card>
           <Card>
@@ -188,8 +195,8 @@ export default function ProvinceManagement() {
               <Landmark className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Jawa Barat</div>
-              <p className="text-xs text-muted-foreground">15 cultural items</p>
+              <div className="text-2xl font-bold">N/A</div>
+              <p className="text-xs text-muted-foreground">Data from backend</p>
             </CardContent>
           </Card>
         </div>
@@ -203,37 +210,45 @@ export default function ProvinceManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {provinces.map((province) => (
-              <TableRow key={province.id}>
-                <TableCell>
-                  <img
-                    src={province.image || "/placeholder.svg"}
-                    alt={province.name}
-                    className="h-10 w-10 rounded-md object-cover"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">{province.name}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleEdit(province)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="text-red-600"
-                      onClick={() => handleDelete(province)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {provinces.length > 0 ? (
+              provinces.map((province) => (
+                <TableRow key={province.id}>
+                  <TableCell>
+                    <img
+                      src={province.image || "/placeholder.svg"}
+                      alt={province.name}
+                      className="h-10 w-10 rounded-md object-cover"
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{province.name}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEdit(province)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-red-600"
+                        onClick={() => handleDelete(province)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center py-4">
+                  No provinces found.
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
 

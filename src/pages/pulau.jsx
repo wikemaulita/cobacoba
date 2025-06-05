@@ -1,3 +1,4 @@
+// src/pages/pulau.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import bali from '../assets/images/balipage.webp';
@@ -8,7 +9,8 @@ import jawa from '../assets/images/jawa.webp';
 import papua from '../assets/images/papua.webp';
 import sulawesi from '../assets/images/sulawesi.webp';
 
-const sections = [
+// Export sections so DetailPulauPage can import it
+export const sections = [ //
   {
     id: 1,
     title: 'Sumatra',
@@ -63,22 +65,22 @@ const sections = [
 const Pulau = () => {
   return (
     <div className="flex flex-wrap justify-center">
-      {sections.map((section) => (
-        <div 
-          key={section.id} 
+      {sections.map((section) => ( //
+        <div
+          key={section.id}
           className="flex flex-col items-center justify-center p-4 m-4 bg-white rounded-lg shadow-lg transition-transform duration-300 hover:scale-105 w-80"
         >
-          <h2 className="text-2xl font-bold mb-2">{section.title}</h2>
+          <h2 className="text-2xl font-bold mb-2">{section.title}</h2> {/* */}
           <div className="relative">
-            <img 
-              src={section.imageUrl} 
-              alt={section.title} 
+            <img
+              src={section.imageUrl} //
+              alt={section.title} //
               className="w-full h-48 object-cover rounded-lg brightness-75"
             />
           </div>
-          <p className="mt-2 text-center text-gray-700">{section.description}</p>
-          <Link 
-            to={`/pulau/${section.id}`} 
+          <p className="mt-2 text-center text-gray-700">{section.description}</p> {/* */}
+          <Link
+            to={`/pulau/${section.id}`} // // This is the key change to ensure dynamic routing
             className="mt-4 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
           >
             Lihat Detail

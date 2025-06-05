@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -51,78 +51,65 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+// Import API functions
+import { getEvents, getProvinces, getRegions, createEvent, updateEvent, deleteEvent } from '@/lib/api';
 
-// Mock data for events
-const mockEvents = [
-  {
-    id: 1,
-    name: "Bali Arts Festival",
-    description:
-      "Annual arts and cultural festival showcasing Balinese arts, music, and dance.",
-    image: "/placeholder.svg?height=100&width=100",
-    location: "Denpasar Art Center",
-    date: "2023-06-15",
-    region: "Denpasar",
-    province: "Bali",
-  },
-  {
-    id: 2,
-    name: "Yogyakarta Cultural Night",
-    description:
-      "A night of traditional Javanese performances and cultural exhibitions.",
-    image: "/placeholder.svg?height=100&width=100",
-    location: "Malioboro Street",
-    date: "2023-07-22",
-    region: "Yogyakarta City",
-    province: "DI Yogyakarta",
-  },
-  {
-    id: 3,
-    name: "Bandung Jazz Festival",
-    description:
-      "Annual jazz music festival featuring local and international jazz musicians.",
-    image: "/placeholder.svg?height=100&width=100",
-    location: "Saung Angklung Udjo",
-    date: "2023-08-10",
-    region: "Bandung",
-    province: "Jawa Barat",
-  },
-];
-
-// Mock data for provinces and regions
-const mockProvinces = [
-  { id: 1, name: "Bali" },
-  { id: 2, name: "DI Yogyakarta" },
-  { id: 3, name: "Jawa Barat" },
-  { id: 4, name: "Jawa Tengah" },
-  { id: 5, name: "Jawa Timur" },
-];
-
-const mockRegions = {
-  Bali: ["Denpasar", "Kuta", "Ubud"],
-  "DI Yogyakarta": ["Yogyakarta City", "Bantul", "Sleman"],
-  "Jawa Barat": ["Bandung", "Bogor", "Cirebon"],
-  "Jawa Tengah": ["Semarang", "Solo", "Magelang"],
-  "Jawa Timur": ["Surabaya", "Malang", "Banyuwangi"],
-};
 
 export default function EventManagement() {
   const { toast } = useToast();
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [allRegions, setAllRegions] = useState([]); // Store all regions
+  const [availableRegions, setAvailableRegions] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [availableRegions, setAvailableRegions] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     image: "",
     location: "",
     date: "",
-    region: "",
-    province: "",
+    regionId: "", // Use region ID
+    provinceId: "", // Use province ID
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchEventsProvincesAndRegions = async () => {
+    try {
+      setLoading(true);
+      const [eventsResponse, provincesResponse, regionsResponse] = await Promise.all([
+        getEvents(),
+        getProvinces(),
+        getRegions()
+      ]);
+
+      const eventsData = eventsResponse.data.map(event => {
+        const province = provincesResponse.data.find(p => p.id === event.provinceId);
+        const region = regionsResponse.data.find(r => r.id === event.regionId);
+        return {
+          ...event,
+          provinceName: province?.name || 'Unknown Province',
+          regionName: region?.name || 'Unknown Region'
+        };
+      });
+
+      setEvents(eventsData);
+      setProvinces(provincesResponse.data);
+      setAllRegions(regionsResponse.data);
+      setLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch data:", err);
+      setError("Failed to load data. Please try again later.");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEventsProvincesAndRegions();
+  }, []);
 
   const handleAddNew = () => {
     setSelectedEvent(null);
@@ -132,8 +119,8 @@ export default function EventManagement() {
       image: "",
       location: "",
       date: "",
-      region: "",
-      province: "",
+      regionId: "",
+      provinceId: "",
     });
     setAvailableRegions([]);
     setIsDialogOpen(true);
@@ -152,10 +139,10 @@ export default function EventManagement() {
       image: event.image,
       location: event.location,
       date: event.date,
-      region: event.region,
-      province: event.province,
+      regionId: event.regionId,
+      provinceId: event.provinceId,
     });
-    setAvailableRegions(mockRegions[event.province] || []);
+    setAvailableRegions(allRegions.filter(region => region.provinceId === event.provinceId));
     setIsDialogOpen(true);
   };
 
@@ -173,68 +160,85 @@ export default function EventManagement() {
   };
 
   const handleProvinceChange = (value) => {
+    const provinceId = Number(value);
     setFormData((prev) => ({
       ...prev,
-      province: value,
-      region: "", // Reset region when province changes
+      provinceId: provinceId,
+      regionId: "", // Reset region
     }));
-    setAvailableRegions(mockRegions[value] || []);
+    setAvailableRegions(allRegions.filter(region => region.provinceId === provinceId));
   };
 
   const handleRegionChange = (value) => {
     setFormData((prev) => ({
       ...prev,
-      region: value,
+      regionId: Number(value),
     }));
   };
 
   const handleDateChange = (date) => {
     setFormData((prev) => ({
       ...prev,
-      date: format(date, "yyyy-MM-dd"),
+      date: date ? format(date, "yyyy-MM-dd") : "",
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (selectedEvent) {
-      // Edit existing event
-      const updatedEvents = events.map((event) =>
-        event.id === selectedEvent.id ? { ...event, ...formData } : event
-      );
-      setEvents(updatedEvents);
+    try {
+      if (selectedEvent) {
+        // Edit existing event
+        await updateEvent(selectedEvent.id, formData);
+        toast({
+          title: "Event Updated",
+          description: `${formData.name} has been updated successfully`,
+        });
+      } else {
+        // Add new event
+        await createEvent(formData);
+        toast({
+          title: "Event Added",
+          description: `${formData.name} has been added successfully`,
+        });
+      }
+      fetchEventsProvincesAndRegions(); // Re-fetch data to update the table
+      setIsDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to save event:", err);
       toast({
-        title: "Event Updated",
-        description: `${formData.name} has been updated successfully`,
-      });
-    } else {
-      // Add new event
-      const newEvent = {
-        id: events.length + 1,
-        ...formData,
-      };
-      setEvents([...events, newEvent]);
-      toast({
-        title: "Event Added",
-        description: `${formData.name} has been added successfully`,
+        title: "Operation Failed",
+        description: err.response?.data?.message || "Failed to save event. Please try again.",
+        variant: "destructive",
       });
     }
-
-    setIsDialogOpen(false);
   };
 
-  const confirmDelete = () => {
-    const updatedEvents = events.filter(
-      (event) => event.id !== selectedEvent.id
-    );
-    setEvents(updatedEvents);
-    toast({
-      title: "Event Deleted",
-      description: `${selectedEvent.name} has been deleted successfully`,
-    });
-    setIsDeleteDialogOpen(false);
+  const confirmDelete = async () => {
+    try {
+      await deleteEvent(selectedEvent.id);
+      toast({
+        title: "Event Deleted",
+        description: `${selectedEvent.name} has been deleted successfully`,
+      });
+      fetchEventsProvincesAndRegions(); // Re-fetch data to update the table
+      setIsDeleteDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to delete event:", err);
+      toast({
+        title: "Deletion Failed",
+        description: err.response?.data?.message || "Failed to delete event. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return <div className="text-center py-10">Loading events...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  }
 
   return (
     <Card>
@@ -261,6 +265,7 @@ export default function EventManagement() {
               <div className="text-2xl font-bold">{events.length}</div>
             </CardContent>
           </Card>
+          {/* These cards need specific API calls or aggregation logic */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -269,10 +274,8 @@ export default function EventManagement() {
               <CalendarClock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2</div>
-              <p className="text-xs text-muted-foreground">
-                In the next 30 days
-              </p>
+              <div className="text-2xl font-bold">N/A</div>
+              <p className="text-xs text-muted-foreground">Data from backend</p>
             </CardContent>
           </Card>
           <Card>
@@ -283,10 +286,8 @@ export default function EventManagement() {
               <Map className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Bali</div>
-              <p className="text-xs text-muted-foreground">
-                8 events this year
-              </p>
+              <div className="text-2xl font-bold">N/A</div>
+              <p className="text-xs text-muted-foreground">Data from backend</p>
             </CardContent>
           </Card>
           <Card>
@@ -297,10 +298,8 @@ export default function EventManagement() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">July</div>
-              <p className="text-xs text-muted-foreground">
-                12 scheduled events
-              </p>
+              <div className="text-2xl font-bold">N/A</div>
+              <p className="text-xs text-muted-foreground">Data from backend</p>
             </CardContent>
           </Card>
         </div>
@@ -318,48 +317,56 @@ export default function EventManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {events.map((event) => (
-              <TableRow key={event.id}>
-                <TableCell>
-                  <img
-                    src={event.image || "/placeholder.svg"}
-                    alt={event.name}
-                    className="h-10 w-10 rounded-md object-cover"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">{event.name}</TableCell>
-                <TableCell>{event.date}</TableCell>
-                <TableCell>{event.location}</TableCell>
-                <TableCell>{event.region}</TableCell>
-                <TableCell>{event.province}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleView(event)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleEdit(event)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="text-red-600"
-                      onClick={() => handleDelete(event)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {events.length > 0 ? (
+              events.map((event) => (
+                <TableRow key={event.id}>
+                  <TableCell>
+                    <img
+                      src={event.image || "/placeholder.svg"}
+                      alt={event.name}
+                      className="h-10 w-10 rounded-md object-cover"
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{event.name}</TableCell>
+                  <TableCell>{event.date}</TableCell>
+                  <TableCell>{event.location}</TableCell>
+                  <TableCell>{event.regionName}</TableCell>
+                  <TableCell>{event.provinceName}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleView(event)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEdit(event)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-red-600"
+                        onClick={() => handleDelete(event)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-4">
+                  No events found.
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
 
@@ -393,11 +400,11 @@ export default function EventManagement() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">Region</p>
-                    <p className="text-sm">{selectedEvent.region}</p>
+                    <p className="text-sm">{selectedEvent.regionName}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">Province</p>
-                    <p className="text-sm">{selectedEvent.province}</p>
+                    <p className="text-sm">{selectedEvent.provinceName}</p>
                   </div>
                 </div>
                 <div>
@@ -490,7 +497,7 @@ export default function EventManagement() {
                 <div className="grid gap-2">
                   <Label htmlFor="province">Province</Label>
                   <Select
-                    value={formData.province}
+                    value={String(formData.provinceId)}
                     onValueChange={handleProvinceChange}
                     required
                   >
@@ -498,8 +505,8 @@ export default function EventManagement() {
                       <SelectValue placeholder="Select a province" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockProvinces.map((province) => (
-                        <SelectItem key={province.id} value={province.name}>
+                      {provinces.map((province) => (
+                        <SelectItem key={province.id} value={String(province.id)}>
                           {province.name}
                         </SelectItem>
                       ))}
@@ -509,9 +516,9 @@ export default function EventManagement() {
                 <div className="grid gap-2">
                   <Label htmlFor="region">Region</Label>
                   <Select
-                    value={formData.region}
+                    value={String(formData.regionId)}
                     onValueChange={handleRegionChange}
-                    disabled={!formData.province}
+                    disabled={!formData.provinceId || availableRegions.length === 0}
                     required
                   >
                     <SelectTrigger>
@@ -519,8 +526,8 @@ export default function EventManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       {availableRegions.map((region) => (
-                        <SelectItem key={region} value={region}>
-                          {region}
+                        <SelectItem key={region.id} value={String(region.id)}>
+                          {region.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

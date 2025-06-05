@@ -5,28 +5,57 @@ import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Landmark, ChevronRight } from "lucide-react";
 import EventCard from "@/components/user/event-card";
 import ExhibitionCard from "@/components/user/exhibition-card";
-import { mockEvents, mockProvinces, mockCultures } from "@/lib/mock-data";
 import { useNavigate } from "react-router-dom";
+import { getEvents, getProvinces, getCultures } from '@/lib/api';
 
 export default function UserDashboard() {
   const navigate = useNavigate();
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [featuredEvent, setFeaturedEvent] = useState(null);
+  const [totalEventsCount, setTotalEventsCount] = useState(0);
+  const [totalProvincesCount, setTotalProvincesCount] = useState(0);
+  const [totalCulturesCount, setTotalCulturesCount] = useState(0);
+  const [popularCultures, setPopularCultures] = useState([]);
+  const [recommendedItems, setRecommendedItems] = useState([]);
 
   useEffect(() => {
-    const sortedEvents = [...mockEvents].sort(
-      (a, b) => new Date(a.date) - new Date(b.date)
-    );
-    setUpcomingEvents(sortedEvents.slice(0, 4));
-    setFeaturedEvent(sortedEvents[0]);
+    const fetchData = async () => {
+      try {
+        // Fetch events
+        const eventsResponse = await getEvents();
+        const eventsData = eventsResponse.data;
+        const sortedEvents = [...eventsData].sort(
+          (a, b) => new Date(a.date) - new Date(b.date)
+        );
+        setUpcomingEvents(sortedEvents.slice(0, 4));
+        setFeaturedEvent(sortedEvents[0] || null);
+        setTotalEventsCount(eventsData.length);
+
+        // Fetch provinces
+        const provincesResponse = await getProvinces();
+        setTotalProvincesCount(provincesResponse.data.length);
+
+        // Fetch cultures
+        const culturesResponse = await getCultures();
+        const culturesData = culturesResponse.data;
+        setTotalCulturesCount(culturesData.length);
+        setPopularCultures(culturesData.slice(0, 4)); // Asumsi 4 pertama adalah yang populer
+        setRecommendedItems([...eventsData.slice(0, 2), ...culturesData.slice(0, 2)]);
+
+      } catch (error) {
+        console.error("Gagal memuat data dashboard:", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Welcome, User</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Selamat Datang, User</h2>
         <p className="text-muted-foreground">
-          Explore cultural events and exhibitions from across Indonesia.
+          Jelajahi event dan pameran budaya dari seluruh Indonesia.
         </p>
       </div>
 
@@ -42,7 +71,7 @@ export default function UserDashboard() {
                 alt={featuredEvent.name}
                 className="h-full w-full object-cover"
               />
-              <div className="absolute bottom-4 left-4 z-20 text-white">
+              <div className="absolute bottom-4 left-4 z-20 text-white max-w-3xl">
                 <h3 className="text-2xl font-bold">{featuredEvent.name}</h3>
                 <p className="flex items-center mt-2">
                   <Calendar className="h-4 w-4 mr-2" /> {featuredEvent.date}
@@ -51,9 +80,9 @@ export default function UserDashboard() {
                 </p>
                 <Button
                   className="mt-4"
-                  onClick={() => navigate(`/user/events/${featuredEvent.id}`)}
+                  onClick={() => navigate(`/events/${featuredEvent.id}`)} 
                 >
-                  View Details
+                  Lihat Detail
                 </Button>
               </div>
             </div>
@@ -65,52 +94,52 @@ export default function UserDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Upcoming Events
+              Event Mendatang
             </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockEvents.length}</div>
+            <div className="text-2xl font-bold">{totalEventsCount}</div>
             <Button
               variant="link"
               className="p-0"
-              onClick={() => navigate("/user/events")}
+              onClick={() => navigate("/events")} 
             >
-              View all events <ChevronRight className="h-4 w-4 ml-1" />
+              Lihat semua event <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Provinces</CardTitle>
+            <CardTitle className="text-sm font-medium">Provinsi</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockProvinces.length}</div>
+            <div className="text-2xl font-bold">{totalProvincesCount}</div>
             <Button
               variant="link"
               className="p-0"
               onClick={() => navigate("/user/provinces")}
             >
-              Explore provinces <ChevronRight className="h-4 w-4 ml-1" />
+              Jelajahi provinsi <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Cultural Exhibitions
+              Pameran Budaya
             </CardTitle>
             <Landmark className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockCultures.length}</div>
+            <div className="text-2xl font-bold">{totalCulturesCount}</div>
             <Button
               variant="link"
               className="p-0"
               onClick={() => navigate("/user/cultures")}
             >
-              Discover cultures <ChevronRight className="h-4 w-4 ml-1" />
+              Temukan budaya <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </CardContent>
         </Card>
@@ -118,9 +147,9 @@ export default function UserDashboard() {
 
       <Tabs defaultValue="events" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="events">Upcoming Events</TabsTrigger>
-          <TabsTrigger value="popular">Popular Exhibitions</TabsTrigger>
-          <TabsTrigger value="recommended">Recommended For You</TabsTrigger>
+          <TabsTrigger value="events">Event Mendatang</TabsTrigger>
+          <TabsTrigger value="popular">Pameran Populer</TabsTrigger>
+          <TabsTrigger value="recommended">Rekomendasi Untuk Anda</TabsTrigger>
         </TabsList>
         <TabsContent value="events" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -129,14 +158,14 @@ export default function UserDashboard() {
             ))}
           </div>
           <div className="flex justify-center">
-            <Button variant="outline" onClick={() => navigate("/user/events")}>
-              View all events
+            <Button variant="outline" onClick={() => navigate("/events")}> {/* Diperbarui ke /events */}
+              Lihat semua event
             </Button>
           </div>
         </TabsContent>
         <TabsContent value="popular" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {mockCultures.slice(0, 4).map((culture) => (
+            {popularCultures.map((culture) => (
               <ExhibitionCard key={culture.id} item={culture} type="culture" />
             ))}
           </div>
@@ -145,17 +174,18 @@ export default function UserDashboard() {
               variant="outline"
               onClick={() => navigate("/user/cultures")}
             >
-              View all cultural exhibitions
+              Lihat semua pameran budaya
             </Button>
           </div>
         </TabsContent>
         <TabsContent value="recommended" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {mockEvents.slice(0, 2).map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-            {mockCultures.slice(0, 2).map((culture) => (
-              <ExhibitionCard key={culture.id} item={culture} type="culture" />
+            {recommendedItems.map((item) => (
+              item.type ? (
+                <ExhibitionCard key={item.id} item={item} type="culture" />
+              ) : (
+                <EventCard key={item.id} event={item} />
+              )
             ))}
           </div>
         </TabsContent>

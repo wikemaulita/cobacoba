@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+// Import API functions
+import { loginUser, registerRegularUser } from '@/lib/api'; //
 
 const AuthContext = createContext(null);
 
@@ -9,7 +11,6 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Inisialisasi state dari localStorage saat aplikasi dimuat
   const [user, setUser] = useState(() => {
     try {
       const storedUser = localStorage.getItem('user');
@@ -31,7 +32,6 @@ export const AuthProvider = ({ children }) => {
 
   const isLoggedIn = !!user && !!token;
 
-  // Efek untuk menyimpan user dan token ke localStorage setiap kali berubah
   useEffect(() => {
     if (user && token) {
       localStorage.setItem('user', JSON.stringify(user));
@@ -44,17 +44,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:3000/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await loginUser(email, password); // Use API service
+      const data = response.data; // Axios puts response body in .data
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.status === 200) { // Check status for success
         setUser(data.user);
         setToken(data.token);
         toast({
@@ -62,7 +55,6 @@ export const AuthProvider = ({ children }) => {
           description: `Selamat datang, ${data.user.username}!`,
         });
 
-        // Arahkan pengguna berdasarkan role
         if (data.user.role === 'SUPER_ADMIN') {
           navigate('/super-admin/dashboard');
         } else if (data.user.role === 'ADMIN_DAERAH') {
@@ -70,50 +62,37 @@ export const AuthProvider = ({ children }) => {
         } else {
           navigate('/user/dashboard'); // Asumsi role default adalah user biasa
         }
-        return true; // Login berhasil
+        return true;
       } else {
-        // Tangani error dari backend
         toast({
           title: "Login Gagal",
           description: data.message || "Email atau password salah. Silakan coba lagi.",
           variant: "destructive",
         });
-        return false; // Login gagal
+        return false;
       }
     } catch (error) {
       console.error("Error during login:", error);
       toast({
         title: "Terjadi Kesalahan",
-        description: "Tidak dapat terhubung ke server. Silakan coba lagi nanti.",
+        description: error.response?.data?.message || "Tidak dapat terhubung ke server. Silakan coba lagi nanti.",
         variant: "destructive",
       });
-      return false; // Login gagal karena error jaringan/lainnya
+      return false;
     }
   };
 
-  // --- Fungsi Baru: registerUser ---
   const registerUser = async (username, email, password) => {
     try {
-      // Asumsi endpoint register-user tidak memerlukan token untuk pendaftaran publik.
-      // Jika backend Anda memaksakannya, Anda perlu klarifikasi atau menyesuaikan.
-      const response = await fetch('http://localhost:3000/users/register-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Jika backend memang perlu token, Anda harus mendapatkannya dari suatu tempat (misal: guest token atau admin token)
-          // Contoh: 'Authorization': `Bearer ${someAdminToken}`
-        },
-        body: JSON.stringify({ username, email, password }),
-      });
+      const response = await registerRegularUser(username, email, password); // Use API service
+      const data = response.data; // Axios puts response body in .data
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.status === 200) { // Check status for success
         toast({
           title: "Pendaftaran Berhasil",
           description: data.message || "Akun Anda berhasil dibuat. Silakan login.",
         });
-        navigate('/login'); // Arahkan ke halaman login setelah register berhasil
+        navigate('/login');
         return true;
       } else {
         toast({
@@ -127,14 +106,12 @@ export const AuthProvider = ({ children }) => {
       console.error("Error during registration:", error);
       toast({
         title: "Terjadi Kesalahan",
-        description: "Tidak dapat terhubung ke server. Silakan coba lagi nanti.",
+        description: error.response?.data?.message || "Tidak dapat terhubung ke server. Silakan coba lagi nanti.",
         variant: "destructive",
       });
       return false;
     }
   };
-  // --- Akhir Fungsi Baru ---
-
 
   const logout = () => {
     setUser(null);
@@ -152,7 +129,7 @@ export const AuthProvider = ({ children }) => {
     isLoggedIn,
     login,
     logout,
-    registerUser, // Tambahkan registerUser ke nilai context
+    registerUser,
   };
 
   return (

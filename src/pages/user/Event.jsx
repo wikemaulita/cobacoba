@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -17,53 +17,95 @@ import {
 } from "@/components/ui/select";
 import { Calendar, Search, Filter } from "lucide-react";
 import EventCard from "@/components/user/event-card";
-import { mockEvents, mockProvinces, mockRegions } from "@/lib/mock-data";
+// import { mockEvents, mockProvinces, mockRegions } from "@/lib/mock-data"; // Remove this line
+import { getEvents, getProvinces, getRegions } from '@/lib/api'; // Import API functions
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
-  const [filteredEvents, setFilteredEvents] = useState(mockEvents);
-  const [availableRegions, setAvailableRegions] = useState([]);
+  const [allEvents, setAllEvents] = useState([]); // Store all events
+  const [filteredEvents, setFilteredEvents] = useState([]); // Store filtered events
+  const [provinces, setProvinces] = useState([]); // State for provinces from API
+  const [availableRegions, setAvailableRegions] = useState([]); // State for regions from API
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleProvinceChange = (value) => {
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        setLoading(true);
+        const eventsResponse = await getEvents();
+        setAllEvents(eventsResponse.data);
+        setFilteredEvents(eventsResponse.data); // Initialize filtered events with all events
+
+        const provincesResponse = await getProvinces();
+        setProvinces(provincesResponse.data);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch initial event data:", err);
+        setError("Failed to load events or provinces. Please try again later.");
+        setLoading(false);
+      }
+    };
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    // This effect runs when filters change
+    applyFilters(searchQuery, selectedProvince, selectedRegion);
+  }, [searchQuery, selectedProvince, selectedRegion, allEvents]); // Depend on allEvents too, if it changes after initial load
+
+  const handleProvinceChange = async (value) => {
     setSelectedProvince(value);
-    setSelectedRegion("");
-    setAvailableRegions(mockRegions[value] || []);
-
-    applyFilters(searchQuery, value, "");
+    setSelectedRegion(""); // Reset region when province changes
+    if (value) {
+      try {
+        // Filter regions by provinceId (assuming backend accepts this)
+        const provinceObj = provinces.find(p => p.name === value);
+        if (provinceObj) {
+          const regionsResponse = await getRegions({ provinceId: provinceObj.id });
+          setAvailableRegions(regionsResponse.data);
+        } else {
+          setAvailableRegions([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch regions for province:", err);
+        setAvailableRegions([]);
+      }
+    } else {
+      setAvailableRegions([]);
+    }
   };
 
   const handleRegionChange = (value) => {
     setSelectedRegion(value);
-    applyFilters(searchQuery, selectedProvince, value);
   };
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
-    applyFilters(e.target.value, selectedProvince, selectedRegion);
   };
 
-  const applyFilters = (query, province, region) => {
-    let filtered = [...mockEvents];
+  const applyFilters = (query, provinceName, regionName) => {
+    let currentFiltered = [...allEvents];
 
     if (query) {
-      filtered = filtered.filter(
+      currentFiltered = currentFiltered.filter(
         (event) =>
           event.name.toLowerCase().includes(query.toLowerCase()) ||
           event.description.toLowerCase().includes(query.toLowerCase())
       );
     }
 
-    if (province) {
-      filtered = filtered.filter((event) => event.province === province);
+    if (provinceName) {
+      currentFiltered = currentFiltered.filter((event) => event.province === provinceName);
     }
 
-    if (region) {
-      filtered = filtered.filter((event) => event.region === region);
+    if (regionName) {
+      currentFiltered = currentFiltered.filter((event) => event.region === regionName);
     }
 
-    setFilteredEvents(filtered);
+    setFilteredEvents(currentFiltered);
   };
 
   const resetFilters = () => {
@@ -71,8 +113,16 @@ export default function EventsPage() {
     setSelectedProvince("");
     setSelectedRegion("");
     setAvailableRegions([]);
-    setFilteredEvents(mockEvents);
+    setFilteredEvents(allEvents); // Reset to all original events
   };
+
+  if (loading) {
+    return <div className="text-center py-10">Loading events...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -112,7 +162,8 @@ export default function EventsPage() {
                   <SelectValue placeholder="Province" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockProvinces.map((province) => (
+                  <SelectItem value="">All Provinces</SelectItem> {/* Option to select all */}
+                  {provinces.map((province) => (
                     <SelectItem key={province.id} value={province.name}>
                       {province.name}
                     </SelectItem>
@@ -130,9 +181,10 @@ export default function EventsPage() {
                   <SelectValue placeholder="Region" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">All Regions</SelectItem> {/* Option to select all */}
                   {availableRegions.map((region) => (
-                    <SelectItem key={region} value={region}>
-                      {region}
+                    <SelectItem key={region.id} value={region.name}> {/* Assuming region also has an ID */}
+                      {region.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -159,7 +211,7 @@ export default function EventsPage() {
               <SelectContent>
                 <SelectItem value="date">Sort by Date</SelectItem>
                 <SelectItem value="name">Sort by Name</SelectItem>
-                <SelectItem value="rating">Sort by Rating</SelectItem>
+                {/* Add more sorting options as needed */}
               </SelectContent>
             </Select>
           </div>

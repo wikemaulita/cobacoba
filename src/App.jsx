@@ -6,20 +6,21 @@ import {
 } from "react-router-dom";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
-import DetailEvent from "./pages/Detailevent";
-import EventBudaya from "./pages/eventbudaya";
 import Home from "./pages/Home";
 import Login from "./pages/auth/Login";
 import NotFound from "./pages/NotFound";
 import Pulau from "./pages/pulau";
-import Register from "./pages//auth/Register";
+import Register from "./pages/auth/Register";
 import DashboardSuperAdmin from "./pages/super-admin/DashboardSuperAdmin";
 import DashboardAdminDaerah from "./pages/admin-daerah/DashboardAdminDaerah";
 import UserDashboard from "./pages/user/DashboardUser";
-import EventsPage from "./pages/user/Event";
+import EventsPage from "./pages/user/Event"; // Tetap diimpor karena akan digunakan sebagai rute publik
 import CulturesPage from "./pages/user/Culture";
 import ProvincesPage from "./pages/user/Province";
-import EventDetailPage from "./pages/user/DetailEvent";
+import EventDetailPage from "./pages/user/DetailEvent"; // Tetap diimpor karena akan digunakan sebagai rute publik
+import CultureDetailPage from "./pages/user/DetailCulture";
+import ProvinceDetailPage from "./pages/user/DetailProvince";
+import DetailPulauPage from "./pages/user/DetailPulau";
 import UserLayout from "./layouts/UserLayout";
 import HomeDashboard from "./components/admin-page/home-dashboard";
 import AccountRequests from "./components/admin-page/account-requests";
@@ -28,7 +29,6 @@ import RegionManagement from "./components/admin-page/region-management";
 import CultureManagement from "./components/admin-page/culture-management";
 import EventManagement from "./components/admin-page/event-management";
 
-// Import AuthProvider
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -50,13 +50,16 @@ function AppContent() {
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/eventbudaya" element={<EventBudaya />} />
-          <Route path="/Detailevent" element={<DetailEvent />} />
           <Route path="/pulau" element={<Pulau />} />
+          <Route path="/pulau/:id" element={<DetailPulauPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Protected Routes for Super Admin */}
+          {/* Rute Event Publik - Dipindahkan dari dalam ProtectedRoute */}
+          <Route path="/events" element={<EventsPage />} />
+          <Route path="/events/:id" element={<EventDetailPage />} />
+
+          {/* Rute Terlindungi untuk Super Admin */}
           <Route
             path="/super-admin"
             element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><DashboardSuperAdmin /></ProtectedRoute>}
@@ -69,7 +72,7 @@ function AppContent() {
             <Route path="events" element={<EventManagement />} />
           </Route>
 
-          {/* Protected Routes for Admin Daerah */}
+          {/* Rute Terlindungi untuk Admin Daerah */}
           <Route
             path="/admin-daerah"
             element={<ProtectedRoute allowedRoles={['ADMIN_DAERAH']}><DashboardAdminDaerah /></ProtectedRoute>}
@@ -80,19 +83,20 @@ function AppContent() {
             <Route path="events" element={<EventManagement />} />
           </Route>
 
-          {/* Protected Routes for User */}
+          {/* Rute Terlindungi untuk User (tidak termasuk events lagi) */}
           <Route
             path="/user"
             element={<ProtectedRoute allowedRoles={['USER', 'SUPER_ADMIN', 'ADMIN_DAERAH']}><UserLayout /></ProtectedRoute>}
           >
             <Route index element={<UserDashboard />} />
             <Route path="dashboard" element={<UserDashboard />} />
-            <Route path="events" element={<EventsPage />} />
+            {/* Rute events sebelumnya di sini, sekarang sudah dipindahkan */}
             <Route path="cultures" element={<CulturesPage />} />
             <Route path="provinces" element={<ProvincesPage />} />
-            <Route path="events/:id" element={<EventDetailPage />} />
+            <Route path="cultures/:id" element={<CultureDetailPage />} />
+            <Route path="provinces/:id" element={<ProvinceDetailPage />} />
           </Route>
-          
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

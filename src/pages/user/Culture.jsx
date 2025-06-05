@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -17,8 +17,10 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter } from "lucide-react";
-import { mockCultures, mockProvinces, mockRegions } from "@/lib/mock-data";
+// import { mockCultures, mockProvinces, mockRegions } from "@/lib/mock-data"; // Remove this line
 import { useNavigate } from "react-router-dom";
+// Import API functions
+import { getCultures, getProvinces, getRegions } from '@/lib/api';
 
 const cultureTypes = [
   "All Types",
@@ -38,32 +40,61 @@ export default function CulturesPage() {
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedType, setSelectedType] = useState("All Types");
-  const [availableRegions, setAvailableRegions] = useState([]);
+  const [allCultures, setAllCultures] = useState([]); // Store all cultures
+  const [filteredCultures, setFilteredCultures] = useState([]); // Store filtered cultures
+  const [provinces, setProvinces] = useState([]); // State for provinces from API
+  const [availableRegions, setAvailableRegions] = useState([]); // State for regions from API
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const filteredCultures = mockCultures.filter((culture) => {
-    const matchesSearch =
-      culture.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      culture.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesProvince = selectedProvince
-      ? culture.province === selectedProvince
-      : true;
-    const matchesRegion = selectedRegion
-      ? culture.region === selectedRegion
-      : true;
-    const matchesType =
-      selectedType === "All Types" ? true : culture.type === selectedType;
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        setLoading(true);
+        const culturesResponse = await getCultures();
+        setAllCultures(culturesResponse.data);
+        setFilteredCultures(culturesResponse.data); // Initialize filtered cultures with all cultures
 
-    return matchesSearch && matchesProvince && matchesRegion && matchesType;
-  });
+        const provincesResponse = await getProvinces();
+        setProvinces(provincesResponse.data);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch initial culture data:", err);
+        setError("Failed to load cultural items or provinces. Please try again later.");
+        setLoading(false);
+      }
+    };
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    // This effect runs when filters change
+    applyFilters(searchQuery, selectedProvince, selectedRegion, selectedType);
+  }, [searchQuery, selectedProvince, selectedRegion, selectedType, allCultures]); // Depend on allCultures
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
   };
 
-  const handleProvinceChange = (value) => {
+  const handleProvinceChange = async (value) => {
     setSelectedProvince(value);
-    setSelectedRegion("");
-    setAvailableRegions(mockRegions[value] || []);
+    setSelectedRegion(""); // Reset region when province changes
+    if (value) {
+      try {
+        const provinceObj = provinces.find(p => p.name === value);
+        if (provinceObj) {
+          const regionsResponse = await getRegions({ provinceId: provinceObj.id });
+          setAvailableRegions(regionsResponse.data);
+        } else {
+          setAvailableRegions([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch regions for province:", err);
+        setAvailableRegions([]);
+      }
+    } else {
+      setAvailableRegions([]);
+    }
   };
 
   const handleRegionChange = (value) => {
@@ -74,13 +105,48 @@ export default function CulturesPage() {
     setSelectedType(value);
   };
 
+  const applyFilters = (query, provinceName, regionName, type) => {
+    let currentFiltered = [...allCultures];
+
+    if (query) {
+      currentFiltered = currentFiltered.filter(
+        (culture) =>
+          culture.name.toLowerCase().includes(query.toLowerCase()) ||
+          culture.description.toLowerCase().includes(query.toLowerCase())
+      );
+    }
+
+    if (provinceName) {
+      currentFiltered = currentFiltered.filter((culture) => culture.province === provinceName);
+    }
+
+    if (regionName) {
+      currentFiltered = currentFiltered.filter((culture) => culture.region === regionName);
+    }
+
+    if (type !== "All Types") {
+      currentFiltered = currentFiltered.filter((culture) => culture.type === type);
+    }
+
+    setFilteredCultures(currentFiltered);
+  };
+
   const resetFilters = () => {
     setSearchQuery("");
     setSelectedProvince("");
     setSelectedRegion("");
     setSelectedType("All Types");
     setAvailableRegions([]);
+    setFilteredCultures(allCultures); // Reset to all original cultures
   };
+
+  if (loading) {
+    return <div className="text-center py-10">Loading cultural items...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -136,7 +202,8 @@ export default function CulturesPage() {
                   <SelectValue placeholder="Province" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockProvinces.map((province) => (
+                  <SelectItem value="">All Provinces</SelectItem>
+                  {provinces.map((province) => (
                     <SelectItem key={province.id} value={province.name}>
                       {province.name}
                     </SelectItem>
@@ -154,9 +221,10 @@ export default function CulturesPage() {
                   <SelectValue placeholder="Region" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">All Regions</SelectItem>
                   {availableRegions.map((region) => (
-                    <SelectItem key={region} value={region}>
-                      {region}
+                    <SelectItem key={region.id} value={region.name}>
+                      {region.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -45,56 +45,8 @@ import {
   Crown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-const mockCultures = [
-  {
-    id: 1,
-    name: "Kecak Dance",
-    description:
-      "Traditional Balinese dance and music drama developed in the 1930s.",
-    image: "/placeholder.svg?height=100&width=100",
-    type: "Dance",
-    region: "Denpasar",
-    province: "Bali",
-  },
-  {
-    id: 2,
-    name: "Wayang Kulit",
-    description:
-      "Traditional shadow puppet theatre in Indonesia and other parts of Southeast Asia.",
-    image: "/placeholder.svg?height=100&width=100",
-    type: "Puppet",
-    region: "Yogyakarta City",
-    province: "DI Yogyakarta",
-  },
-  {
-    id: 3,
-    name: "Angklung",
-    description:
-      "Traditional musical instrument made of bamboo tubes attached to a bamboo frame.",
-    image: "/placeholder.svg?height=100&width=100",
-    type: "Music",
-    region: "Bandung",
-    province: "Jawa Barat",
-  },
-];
-
-// Mock data for provinces and regions
-const mockProvinces = [
-  { id: 1, name: "Bali" },
-  { id: 2, name: "DI Yogyakarta" },
-  { id: 3, name: "Jawa Barat" },
-  { id: 4, name: "Jawa Tengah" },
-  { id: 5, name: "Jawa Timur" },
-];
-
-const mockRegions = {
-  Bali: ["Denpasar", "Kuta", "Ubud"],
-  "DI Yogyakarta": ["Yogyakarta City", "Bantul", "Sleman"],
-  "Jawa Barat": ["Bandung", "Bogor", "Cirebon"],
-  "Jawa Tengah": ["Semarang", "Solo", "Magelang"],
-  "Jawa Timur": ["Surabaya", "Malang", "Banyuwangi"],
-};
+// Import API functions
+import { getCultures, getProvinces, getRegions, createCulture, updateCulture, deleteCulture } from '@/lib/api';
 
 const cultureTypes = [
   "Dance",
@@ -109,20 +61,59 @@ const cultureTypes = [
 
 export default function CultureManagement() {
   const { toast } = useToast();
-  const [cultures, setCultures] = useState(mockCultures);
+  const [cultures, setCultures] = useState([]); // State for cultures
+  const [provinces, setProvinces] = useState([]); // State for provinces
+  const [allRegions, setAllRegions] = useState([]); // Store all regions for filtering
+  const [availableRegions, setAvailableRegions] = useState([]); // Filtered regions for dropdown
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCulture, setSelectedCulture] = useState(null);
-  const [availableRegions, setAvailableRegions] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     image: "",
     type: "",
-    region: "",
-    province: "",
+    regionId: "", // Store region ID
+    provinceId: "", // Store province ID
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+
+  const fetchCulturesProvincesAndRegions = async () => {
+    try {
+      setLoading(true);
+      const [culturesResponse, provincesResponse, regionsResponse] = await Promise.all([
+        getCultures(),
+        getProvinces(),
+        getRegions() // Fetch all regions initially
+      ]);
+
+      const culturesData = culturesResponse.data.map(culture => {
+        const province = provincesResponse.data.find(p => p.id === culture.provinceId);
+        const region = regionsResponse.data.find(r => r.id === culture.regionId);
+        return {
+          ...culture,
+          provinceName: province?.name || 'Unknown Province',
+          regionName: region?.name || 'Unknown Region'
+        };
+      });
+
+      setCultures(culturesData);
+      setProvinces(provincesResponse.data);
+      setAllRegions(regionsResponse.data); // Store all regions
+      setLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch data:", err);
+      setError("Failed to load data. Please try again later.");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCulturesProvincesAndRegions();
+  }, []);
 
   const handleAddNew = () => {
     setSelectedCulture(null);
@@ -131,10 +122,10 @@ export default function CultureManagement() {
       description: "",
       image: "",
       type: "",
-      region: "",
-      province: "",
+      regionId: "",
+      provinceId: "",
     });
-    setAvailableRegions([]);
+    setAvailableRegions([]); // Clear regions for new entry
     setIsDialogOpen(true);
   };
 
@@ -150,10 +141,11 @@ export default function CultureManagement() {
       description: culture.description,
       image: culture.image,
       type: culture.type,
-      region: culture.region,
-      province: culture.province,
+      regionId: culture.regionId,
+      provinceId: culture.provinceId,
     });
-    setAvailableRegions(mockRegions[culture.province] || []);
+    // Filter available regions based on the selected culture's province
+    setAvailableRegions(allRegions.filter(region => region.provinceId === culture.provinceId));
     setIsDialogOpen(true);
   };
 
@@ -171,18 +163,19 @@ export default function CultureManagement() {
   };
 
   const handleProvinceChange = (value) => {
+    const provinceId = Number(value);
     setFormData((prev) => ({
       ...prev,
-      province: value,
-      region: "",
+      provinceId: provinceId,
+      regionId: "", // Reset region when province changes
     }));
-    setAvailableRegions(mockRegions[value] || []);
+    setAvailableRegions(allRegions.filter(region => region.provinceId === provinceId));
   };
 
   const handleRegionChange = (value) => {
     setFormData((prev) => ({
       ...prev,
-      region: value,
+      regionId: Number(value),
     }));
   };
 
@@ -193,48 +186,62 @@ export default function CultureManagement() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (selectedCulture) {
-      // Edit existing culture
-      const updatedCultures = cultures.map((culture) =>
-        culture.id === selectedCulture.id
-          ? { ...culture, ...formData }
-          : culture
-      );
-      setCultures(updatedCultures);
+    try {
+      if (selectedCulture) {
+        // Edit existing culture
+        await updateCulture(selectedCulture.id, formData);
+        toast({
+          title: "Culture Updated",
+          description: `${formData.name} has been updated successfully`,
+        });
+      } else {
+        // Add new culture
+        await createCulture(formData);
+        toast({
+          title: "Culture Added",
+          description: `${formData.name} has been added successfully`,
+        });
+      }
+      fetchCulturesProvincesAndRegions(); // Re-fetch data to update the table
+      setIsDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to save culture:", err);
       toast({
-        title: "Culture Updated",
-        description: `${formData.name} has been updated successfully`,
-      });
-    } else {
-      // Add new culture
-      const newCulture = {
-        id: cultures.length + 1,
-        ...formData,
-      };
-      setCultures([...cultures, newCulture]);
-      toast({
-        title: "Culture Added",
-        description: `${formData.name} has been added successfully`,
+        title: "Operation Failed",
+        description: err.response?.data?.message || "Failed to save cultural item. Please try again.",
+        variant: "destructive",
       });
     }
-
-    setIsDialogOpen(false);
   };
 
-  const confirmDelete = () => {
-    const updatedCultures = cultures.filter(
-      (culture) => culture.id !== selectedCulture.id
-    );
-    setCultures(updatedCultures);
-    toast({
-      title: "Culture Deleted",
-      description: `${selectedCulture.name} has been deleted successfully`,
-    });
-    setIsDeleteDialogOpen(false);
+  const confirmDelete = async () => {
+    try {
+      await deleteCulture(selectedCulture.id);
+      toast({
+        title: "Culture Deleted",
+        description: `${selectedCulture.name} has been deleted successfully`,
+      });
+      fetchCulturesProvincesAndRegions(); // Re-fetch data to update the table
+      setIsDeleteDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to delete culture:", err);
+      toast({
+        title: "Deletion Failed",
+        description: err.response?.data?.message || "Failed to delete cultural item. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return <div className="text-center py-10">Loading cultural items...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  }
 
   return (
     <Card>
@@ -262,6 +269,7 @@ export default function CultureManagement() {
               <div className="text-2xl font-bold">{cultures.length}</div>
             </CardContent>
           </Card>
+          {/* These cards would need specific API calls or aggregation logic */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -270,8 +278,8 @@ export default function CultureManagement() {
               <Music className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Dance</div>
-              <p className="text-xs text-muted-foreground">18 cultural items</p>
+              <div className="text-2xl font-bold">N/A</div>
+              <p className="text-xs text-muted-foreground">Data from backend</p>
             </CardContent>
           </Card>
           <Card>
@@ -282,7 +290,7 @@ export default function CultureManagement() {
               <Map className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5</div>
+              <div className="text-2xl font-bold">{provinces.length}</div>
               <p className="text-xs text-muted-foreground">
                 All provinces represented
               </p>
@@ -296,8 +304,8 @@ export default function CultureManagement() {
               <Crown className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Jawa Barat</div>
-              <p className="text-xs text-muted-foreground">15 cultural items</p>
+              <div className="text-2xl font-bold">N/A</div>
+              <p className="text-xs text-muted-foreground">Data from backend</p>
             </CardContent>
           </Card>
         </div>
@@ -314,49 +322,57 @@ export default function CultureManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {cultures.map((culture) => (
-              <TableRow key={culture.id}>
-                <TableCell>
-                  <img
-                    src={culture.image || "/placeholder.svg"}
-                    alt={culture.name}
-                    className="h-10 w-10 rounded-md object-cover"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">{culture.name}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{culture.type}</Badge>
-                </TableCell>
-                <TableCell>{culture.region}</TableCell>
-                <TableCell>{culture.province}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleView(culture)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleEdit(culture)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="text-red-600"
-                      onClick={() => handleDelete(culture)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {cultures.length > 0 ? (
+              cultures.map((culture) => (
+                <TableRow key={culture.id}>
+                  <TableCell>
+                    <img
+                      src={culture.image || "/placeholder.svg"}
+                      alt={culture.name}
+                      className="h-10 w-10 rounded-md object-cover"
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{culture.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{culture.type}</Badge>
+                  </TableCell>
+                  <TableCell>{culture.regionName}</TableCell>
+                  <TableCell>{culture.provinceName}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleView(culture)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEdit(culture)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-red-600"
+                        onClick={() => handleDelete(culture)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-4">
+                  No cultural items found.
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
 
@@ -386,11 +402,11 @@ export default function CultureManagement() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">Region</p>
-                    <p className="text-sm">{selectedCulture.region}</p>
+                    <p className="text-sm">{selectedCulture.regionName}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">Province</p>
-                    <p className="text-sm">{selectedCulture.province}</p>
+                    <p className="text-sm">{selectedCulture.provinceName}</p>
                   </div>
                 </div>
                 <div>
@@ -465,7 +481,7 @@ export default function CultureManagement() {
                 <div className="grid gap-2">
                   <Label htmlFor="province">Province</Label>
                   <Select
-                    value={formData.province}
+                    value={String(formData.provinceId)}
                     onValueChange={handleProvinceChange}
                     required
                   >
@@ -473,8 +489,8 @@ export default function CultureManagement() {
                       <SelectValue placeholder="Select a province" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockProvinces.map((province) => (
-                        <SelectItem key={province.id} value={province.name}>
+                      {provinces.map((province) => (
+                        <SelectItem key={province.id} value={String(province.id)}>
                           {province.name}
                         </SelectItem>
                       ))}
@@ -484,9 +500,9 @@ export default function CultureManagement() {
                 <div className="grid gap-2">
                   <Label htmlFor="region">Region</Label>
                   <Select
-                    value={formData.region}
+                    value={String(formData.regionId)}
                     onValueChange={handleRegionChange}
-                    disabled={!formData.province}
+                    disabled={!formData.provinceId || availableRegions.length === 0}
                     required
                   >
                     <SelectTrigger>
@@ -494,8 +510,8 @@ export default function CultureManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       {availableRegions.map((region) => (
-                        <SelectItem key={region} value={region}>
-                          {region}
+                        <SelectItem key={region.id} value={String(region.id)}>
+                          {region.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

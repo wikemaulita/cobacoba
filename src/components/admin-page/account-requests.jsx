@@ -1,5 +1,5 @@
 // src/components/admin-page/account-requests.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -37,56 +37,39 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Mock data for account requests
-const mockRequests = [
-  {
-    id: 1,
-    name: "Admin Bali",
-    email: "admin.bali@example.com",
-    region: "Bali",
-    province: "Bali",
-    status: "pending",
-    requestDate: "2023-05-15",
-    details: "Request to manage cultural content for Bali region",
-    // Asumsi ada id_daerah/daerahId yang bisa diambil dari database untuk diset
-    daerahId: 1, // Contoh: asumsikan ID daerah untuk Bali
-    password: "passwordbaru123" // Asumsi password sementara/default untuk admin baru
-  },
-  {
-    id: 2,
-    name: "Admin Yogyakarta",
-    email: "admin.yogya@example.com",
-    region: "Yogyakarta",
-    province: "DI Yogyakarta",
-    status: "pending",
-    requestDate: "2023-05-16",
-    details: "Request to manage cultural content for Yogyakarta region",
-    daerahId: 2, // Contoh: asumsikan ID daerah untuk Yogyakarta
-    password: "passwordbaru123"
-  },
-  {
-    id: 3,
-    name: "Admin Bandung",
-    email: "admin.bandung@example.com",
-    region: "Bandung",
-    province: "Jawa Barat",
-    status: "pending",
-    requestDate: "2023-05-17",
-    details: "Request to manage cultural content for Bandung region",
-    daerahId: 3, // Contoh: asumsikan ID daerah untuk Jawa Barat
-    password: "passwordbaru123"
-  },
-];
+// Import API functions
+import { getAdminRequests, createAdminUser, updateAdminRequest, deleteAdminRequest, getProvinces, getRegions } from '@/lib/api';
 
 export default function AccountRequests() {
   const { toast } = useToast();
-  const { token } = useAuth();
-  const [requests, setRequests] = useState(mockRequests);
+  const { token } = useAuth(); //
+  const [requests, setRequests] = useState([]); // State for account requests
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [actionType, setActionType] = useState("");
   const [loadingAction, setLoadingAction] = useState(false);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchRequests = async () => {
+    try {
+      setLoadingRequests(true);
+      const response = await getAdminRequests();
+      // Filter requests with status 'pending' to show only relevant ones.
+      // Adjust if your backend already filters by status
+      setRequests(response.data.filter(req => req.status === 'pending'));
+      setLoadingRequests(false);
+    } catch (err) {
+      console.error("Failed to fetch account requests:", err);
+      setError("Failed to load account requests. Please try again later.");
+      setLoadingRequests(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
 
   const handleViewDetails = (request) => {
     setSelectedRequest(request);
@@ -101,7 +84,6 @@ export default function AccountRequests() {
 
   const confirmAction = async () => {
     setLoadingAction(true);
-    let success = false;
 
     if (!token) {
       toast({
@@ -114,65 +96,65 @@ export default function AccountRequests() {
       return;
     }
 
-    if (actionType === "approve") {
-      try {
-        const response = await fetch('http://localhost:3000/users/create-admin', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            username: selectedRequest.name,
-            email: selectedRequest.email,
-            password: selectedRequest.password,
-            alamat: selectedRequest.details.split('for ')[1] || 'Alamat tidak tersedia',
-            daerahId: selectedRequest.daerahId
-          }),
+    try {
+      if (actionType === "approve") {
+        // Fetch provinces and regions to get the correct IDs if needed
+        // The mock data had `daerahId`, which might be `regionId` on backend
+        // You might need to fetch `province` and `region` to get their `id`s for `createAdminUser`
+        let daerahId = selectedRequest.daerahId; // Use existing mock data's daerahId for now.
+                                              // In a real scenario, you'd look up the ID from province/region name.
+
+        // Example: If backend for `createAdminUser` expects `provinceId` and `regionId` separately
+        // const provinces = (await getProvinces()).data;
+        // const targetProvince = provinces.find(p => p.name === selectedRequest.province);
+        // const regions = (await getRegions({ provinceId: targetProvince?.id })).data;
+        // const targetRegion = regions.find(r => r.name === selectedRequest.region);
+
+        await createAdminUser({
+          username: selectedRequest.name,
+          email: selectedRequest.email,
+          password: selectedRequest.password || 'default_temp_password', // Ensure backend has a default or generated password
+          alamat: selectedRequest.details.split('for ')[1] || 'Alamat tidak tersedia', // Parse from details
+          daerahId: daerahId, // Use the ID from mock data or dynamically look up
+          // role: "ADMIN_DAERAH" // Backend should set this
         });
 
-        const data = await response.json();
+        await updateAdminRequest(selectedRequest.id, { status: "approved" });
 
-        if (response.ok) {
-          success = true;
-          toast({
-            title: "Request Disetujui",
-            description: `Akun admin untuk ${selectedRequest.name} berhasil dibuat.`,
-          });
-          const updatedRequests = requests.filter(
-            (req) => req.id !== selectedRequest.id
-          );
-          setRequests(updatedRequests);
-        } else {
-          toast({
-            title: "Persetujuan Gagal",
-            description: data.message || "Terjadi kesalahan saat membuat akun admin.",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error approving request:", error);
         toast({
-          title: "Terjadi Kesalahan",
-          description: "Tidak dapat terhubung ke server untuk menyetujui permintaan.",
-          variant: "destructive",
+          title: "Request Disetujui",
+          description: `Akun admin untuk ${selectedRequest.name} berhasil dibuat.`,
         });
+        fetchRequests(); // Re-fetch requests to update the list
+      } else if (actionType === "reject") {
+        await updateAdminRequest(selectedRequest.id, { status: "rejected" });
+        toast({
+          title: "Permintaan Ditolak",
+          description: `Permintaan akun dari ${selectedRequest.name} telah ditolak.`,
+        });
+        fetchRequests(); // Re-fetch requests to update the list
       }
-    } else if (actionType === "reject") {
-      const updatedRequests = requests.filter(
-        (req) => req.id !== selectedRequest.id
-      );
-      setRequests(updatedRequests);
-      success = true;
+    } catch (error) {
+      console.error(`Error ${actionType}ing request:`, error);
       toast({
-        title: "Permintaan Ditolak",
-        description: `Permintaan akun dari ${selectedRequest.name} telah ditolak.`,
+        title: `Gagal ${actionType === 'approve' ? 'Menyetujui' : 'Menolak'}`,
+        description: error.response?.data?.message || `Terjadi kesalahan saat ${actionType === 'approve' ? 'membuat akun admin' : 'menolak permintaan'}.`,
+        variant: "destructive",
       });
+    } finally {
+      setLoadingAction(false);
+      setConfirmDialogOpen(false);
+      setDetailsOpen(false); // Close details dialog if it was open
     }
-
-    setLoadingAction(false);
-    setConfirmDialogOpen(false);
   };
+
+  if (loadingRequests) {
+    return <div className="text-center py-10">Loading account requests...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  }
 
   return (
     <Card>
@@ -212,7 +194,7 @@ export default function AccountRequests() {
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">0</div> {/* This count would come from backend */}
             </CardContent>
           </Card>
           <Card>
@@ -221,7 +203,7 @@ export default function AccountRequests() {
               <XCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">0</div> {/* This count would come from backend */}
             </CardContent>
           </Card>
         </div>
