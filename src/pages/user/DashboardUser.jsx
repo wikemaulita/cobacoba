@@ -1,6 +1,6 @@
-// src/pages/user/DashboardUser.jsx
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Landmark, ChevronRight } from "lucide-react";
 import EventCard from "@/components/user/event-card";
@@ -17,12 +17,25 @@ export default function UserDashboard() {
   const [totalCulturesCount, setTotalCulturesCount] = useState(0);
   const [popularCultures, setPopularCultures] = useState([]);
   const [recommendedItems, setRecommendedItems] = useState([]);
+  const [loading, setLoading] = useState(true); // PERUBAHAN: Tambahkan state loading
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true); // Mulai loading
       try {
-        const eventsResponse = await getEvents();
-        const eventsData = eventsResponse.data;
+        // Fetch semua data secara paralel
+        const [eventsResponse, provincesResponse, culturesResponse] = await Promise.all([
+          getEvents(),
+          getProvinces(),
+          getCultures()
+        ]);
+
+        // PERUBAHAN: Tambahkan pengecekan apakah response.data adalah array
+        const eventsData = Array.isArray(eventsResponse?.data) ? eventsResponse.data : [];
+        const provincesData = Array.isArray(provincesResponse?.data) ? provincesResponse.data : [];
+        const culturesData = Array.isArray(culturesResponse?.data) ? culturesResponse.data : [];
+
+        // Proses data events
         const sortedEvents = [...eventsData].sort(
           (a, b) => new Date(a.date) - new Date(b.date)
         );
@@ -30,22 +43,29 @@ export default function UserDashboard() {
         setFeaturedEvent(sortedEvents[0] || null);
         setTotalEventsCount(eventsData.length);
 
-        const provincesResponse = await getProvinces();
-        setTotalProvincesCount(provincesResponse.data.length);
+        // Proses data provinces
+        setTotalProvincesCount(provincesData.length);
 
-        const culturesResponse = await getCultures();
-        const culturesData = culturesResponse.data;
+        // Proses data cultures
         setTotalCulturesCount(culturesData.length);
         setPopularCultures(culturesData.slice(0, 4));
         setRecommendedItems([...eventsData.slice(0, 2), ...culturesData.slice(0, 2)]);
 
       } catch (error) {
         console.error("Gagal memuat data dashboard:", error);
+        // Anda bisa menambahkan state error di sini jika perlu
+      } finally {
+        setLoading(false); // Selesai loading, baik sukses maupun gagal
       }
     };
 
     fetchData();
   }, []);
+
+  // PERUBAHAN: Tampilkan pesan loading
+  if (loading) {
+    return <div className="text-center py-10">Memuat dashboard...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -62,9 +82,7 @@ export default function UserDashboard() {
             <div className="relative h-64 w-full">
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-10"></div>
               <img
-                src={
-                  featuredEvent.image || "/placeholder.svg?height=400&width=800"
-                }
+                src={featuredEvent.image || "/placeholder.svg?height=400&width=800"}
                 alt={featuredEvent.name}
                 className="h-full w-full object-cover"
               />
@@ -88,21 +106,14 @@ export default function UserDashboard() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* PERUBAHAN: Menambahkan border aksen pada Card */}
         <Card className="border-l-4 border-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Event Mendatang
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Event Mendatang</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalEventsCount}</div>
-            <Button
-              variant="link"
-              className="p-0 h-auto text-blue-600 hover:text-blue-700"
-              onClick={() => navigate("/user/events")}
-            >
+            <Button variant="link" className="p-0 h-auto text-blue-600 hover:text-blue-700" onClick={() => navigate("/user/events")}>
               Lihat semua event <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </CardContent>
@@ -114,36 +125,26 @@ export default function UserDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalProvincesCount}</div>
-            <Button
-              variant="link"
-              className="p-0 h-auto text-emerald-600 hover:text-emerald-700"
-              onClick={() => navigate("/user/provinces")}
-            >
+            <Button variant="link" className="p-0 h-auto text-emerald-600 hover:text-emerald-700" onClick={() => navigate("/user/provinces")}>
               Jelajahi provinsi <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </CardContent>
         </Card>
         <Card className="border-l-4 border-amber-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pameran Budaya
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Pameran Budaya</CardTitle>
             <Landmark className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalCulturesCount}</div>
-            <Button
-              variant="link"
-              className="p-0 h-auto text-amber-600 hover:text-amber-700"
-              onClick={() => navigate("/user/cultures")}
-            >
+            <Button variant="link" className="p-0 h-auto text-amber-600 hover:text-amber-700" onClick={() => navigate("/user/cultures")}>
               Temukan budaya <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+       <Card>
         <CardContent className="p-0">
            <Tabs defaultValue="events" className="w-full">
             <TabsList className="grid w-full grid-cols-3 rounded-t-lg rounded-b-none">
@@ -153,40 +154,23 @@ export default function UserDashboard() {
             </TabsList>
             <TabsContent value="events" className="p-4">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {upcomingEvents.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
+                {upcomingEvents.map((event) => (<EventCard key={event.id} event={event} />))}
               </div>
               <div className="flex justify-center mt-4">
-                <Button variant="outline" onClick={() => navigate("/user/events")}>
-                  Lihat semua event
-                </Button>
+                <Button variant="outline" onClick={() => navigate("/user/events")}>Lihat semua event</Button>
               </div>
             </TabsContent>
             <TabsContent value="popular" className="p-4">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {popularCultures.map((culture) => (
-                  <ExhibitionCard key={culture.id} item={culture} type="culture" />
-                ))}
+                {popularCultures.map((culture) => (<ExhibitionCard key={culture.id} item={culture} type="culture" />))}
               </div>
               <div className="flex justify-center mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/user/cultures")}
-                >
-                  Lihat semua pameran budaya
-                </Button>
+                <Button variant="outline" onClick={() => navigate("/user/cultures")}>Lihat semua pameran budaya</Button>
               </div>
             </TabsContent>
             <TabsContent value="recommended" className="p-4">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {recommendedItems.map((item) => (
-                  item.type ? (
-                    <ExhibitionCard key={item.id} item={item} type="culture" />
-                  ) : (
-                    <EventCard key={item.id} event={item} />
-                  )
-                ))}
+                {recommendedItems.map((item) => (item.type ? (<ExhibitionCard key={item.id} item={item} type="culture" />) : (<EventCard key={item.id} event={item} />)))}
               </div>
             </TabsContent>
           </Tabs>

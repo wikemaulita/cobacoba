@@ -42,14 +42,14 @@ import {
   getUserRatingForEvent,
   joinEvent,
   submitUserRating,
-  deleteRatingParticipation, // Asumsi ini juga berfungsi untuk membatalkan bergabung/ulasan
+  deleteRatingParticipation,
 } from '@/lib/api';
 
 export default function EventDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth(); // Menggunakan user untuk pengecekan login
+  const { user } = useAuth(); 
   const [event, setEvent] = useState(null);
   const [isJoined, setIsJoined] = useState(false);
   const [isRatingOpen, setIsRatingOpen] = useState(false);
@@ -61,44 +61,45 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+useEffect(() => {
     const fetchEventData = async () => {
       try {
         setLoading(true);
         const eventId = Number(params.id);
 
+        // Ambil data utama event
         const eventResponse = await getEventDetail(eventId);
         setEvent(eventResponse.data);
 
+        // Ambil data rating & ulasan
         const reviewsResponse = await getEventRatings(eventId);
         setReviews(reviewsResponse.data);
 
+        // Ambil rata-rata rating
         const averageRatingResponse = await getAverageRating(eventId);
         setAverageRating(averageRatingResponse.data.averageRating || 0);
         setReviewCount(averageRatingResponse.data.reviewCount || 0);
 
-        // Cek apakah pengguna sudah bergabung/memberi rating (hanya jika sudah login)
         if (user) {
             try {
-                const userRatingResponse = await getUserRatingForEvent(eventId);
-                if (userRatingResponse.data.hasRated) {
+                // Panggil getUserRatingForEvent dengan DUA argumen: userId dan eventId
+                const userRatingResponse = await getUserRatingForEvent(user.id, eventId);
+                if (userRatingResponse.data && userRatingResponse.data.hasRated) {
                     setUserRating(userRatingResponse.data.rating.rating);
                     setUserComment(userRatingResponse.data.rating.comment || "");
-                    setIsJoined(true); // Asumsi jika sudah memberi rating, berarti sudah bergabung
-                } else if (userRatingResponse.data.isJoined) { // Cek jika backend juga mengirim status isJoined secara terpisah
+                    setIsJoined(true);
+                } else if (userRatingResponse.data && userRatingResponse.data.isJoined) {
                     setIsJoined(true);
                 }
             } catch (userCheckError) {
-                // Ini bisa berarti pengguna belum memberi rating/bergabung, tidak masalah
-                console.log("Pengguna belum memberi rating/bergabung dengan event ini atau terjadi kesalahan saat mengambil status pengguna:", userCheckError.response?.data?.message);
+                console.log("Info: User belum memberi rating/bergabung atau error saat cek status.", userCheckError.response?.data?.message);
                 setIsJoined(false);
             }
         } else {
-            setIsJoined(false); // Jika tidak ada user, berarti belum bergabung
-            setUserRating(0); // Reset rating jika tidak ada user
-            setUserComment(""); // Reset komentar jika tidak ada user
+            setIsJoined(false);
+            setUserRating(0);
+            setUserComment("");
         }
-
 
         setLoading(false);
       } catch (err) {
@@ -109,7 +110,7 @@ export default function EventDetailPage() {
     };
 
     fetchEventData();
-  }, [params.id, user, navigate]);
+  }, [params.id, user]);
 
   const handleJoinEvent = async () => {
     if (!user) { // Pengecekan Autentikasi

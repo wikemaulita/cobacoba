@@ -17,33 +17,28 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter } from "lucide-react";
-// import { mockCultures, mockProvinces, mockRegions } from "@/lib/mock-data"; // Remove this line
 import { useNavigate } from "react-router-dom";
-// Import API functions
-import { getCultures, getProvinces, getRegions } from '@/lib/api';
+import { getCultures, getProvinces, getRegions } from '@/lib/api'; // Import API functions
 
 const cultureTypes = [
-  "All Types",
-  "Dance",
-  "Music",
-  "Craft",
-  "Puppet",
-  "Ceremony",
-  "Culinary",
-  "Clothing",
-  "Architecture",
+  "All Types", "Dance", "Music", "Craft", "Puppet",
+  "Ceremony", "Culinary", "Clothing", "Architecture",
 ];
+
+// Definisikan nilai konstanta untuk opsi "Semua"
+const ALL_PROVINCES_VALUE = "__ALL_PROVINCES__";
+const ALL_REGIONS_VALUE = "__ALL_REGIONS__";
 
 export default function CulturesPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProvince, setSelectedProvince] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedProvince, setSelectedProvince] = useState(""); // "" berarti semua
+  const [selectedRegion, setSelectedRegion] = useState("");   // "" berarti semua
   const [selectedType, setSelectedType] = useState("All Types");
-  const [allCultures, setAllCultures] = useState([]); // Store all cultures
-  const [filteredCultures, setFilteredCultures] = useState([]); // Store filtered cultures
-  const [provinces, setProvinces] = useState([]); // State for provinces from API
-  const [availableRegions, setAvailableRegions] = useState([]); // State for regions from API
+  const [allCultures, setAllCultures] = useState([]);
+  const [filteredCultures, setFilteredCultures] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [availableRegions, setAvailableRegions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -51,76 +46,55 @@ export default function CulturesPage() {
     const fetchInitialData = async () => {
       try {
         setLoading(true);
+        setError(null);
         const culturesResponse = await getCultures();
-        setAllCultures(culturesResponse.data);
-        setFilteredCultures(culturesResponse.data); // Initialize filtered cultures with all cultures
-
         const provincesResponse = await getProvinces();
-        setProvinces(provincesResponse.data);
+
+        if (culturesResponse && Array.isArray(culturesResponse.data)) {
+          setAllCultures(culturesResponse.data);
+          setFilteredCultures(culturesResponse.data);
+        } else {
+          console.warn("Expected culturesResponse.data to be an array, but got:", culturesResponse?.data);
+          setAllCultures([]);
+          setFilteredCultures([]);
+        }
+
+        if (provincesResponse && Array.isArray(provincesResponse.data)) {
+          setProvinces(provincesResponse.data);
+        } else {
+          console.warn("Expected provincesResponse.data to be an array, but got:", provincesResponse?.data);
+          setProvinces([]);
+        }
+
         setLoading(false);
       } catch (err) {
         console.error("Failed to fetch initial culture data:", err);
-        setError("Failed to load cultural items or provinces. Please try again later.");
+        setError("Gagal memuat data budaya atau provinsi. Silakan coba lagi nanti.");
+        setAllCultures([]);
+        setFilteredCultures([]);
+        setProvinces([]);
         setLoading(false);
       }
     };
     fetchInitialData();
   }, []);
 
-  useEffect(() => {
-    // This effect runs when filters change
-    applyFilters(searchQuery, selectedProvince, selectedRegion, selectedType);
-  }, [searchQuery, selectedProvince, selectedRegion, selectedType, allCultures]); // Depend on allCultures
-
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
-  };
-
-  const handleProvinceChange = async (value) => {
-    setSelectedProvince(value);
-    setSelectedRegion(""); // Reset region when province changes
-    if (value) {
-      try {
-        const provinceObj = provinces.find(p => p.name === value);
-        if (provinceObj) {
-          const regionsResponse = await getRegions({ provinceId: provinceObj.id });
-          setAvailableRegions(regionsResponse.data);
-        } else {
-          setAvailableRegions([]);
-        }
-      } catch (err) {
-        console.error("Failed to fetch regions for province:", err);
-        setAvailableRegions([]);
-      }
-    } else {
-      setAvailableRegions([]);
-    }
-  };
-
-  const handleRegionChange = (value) => {
-    setSelectedRegion(value);
-  };
-
-  const handleTypeChange = (value) => {
-    setSelectedType(value);
-  };
-
   const applyFilters = (query, provinceName, regionName, type) => {
-    let currentFiltered = [...allCultures];
+    let currentFiltered = Array.isArray(allCultures) ? [...allCultures] : [];
 
     if (query) {
       currentFiltered = currentFiltered.filter(
         (culture) =>
-          culture.name.toLowerCase().includes(query.toLowerCase()) ||
-          culture.description.toLowerCase().includes(query.toLowerCase())
+          (culture.name && culture.name.toLowerCase().includes(query.toLowerCase())) ||
+          (culture.description && culture.description.toLowerCase().includes(query.toLowerCase()))
       );
     }
 
-    if (provinceName) {
+    if (provinceName) { // Filter jika provinceName tidak kosong
       currentFiltered = currentFiltered.filter((culture) => culture.province === provinceName);
     }
 
-    if (regionName) {
+    if (regionName) { // Filter jika regionName tidak kosong
       currentFiltered = currentFiltered.filter((culture) => culture.region === regionName);
     }
 
@@ -131,17 +105,72 @@ export default function CulturesPage() {
     setFilteredCultures(currentFiltered);
   };
 
+
+  useEffect(() => {
+    applyFilters(searchQuery, selectedProvince, selectedRegion, selectedType);
+  }, [searchQuery, selectedProvince, selectedRegion, selectedType, allCultures]);
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleProvinceChange = async (valueFromSelect) => {
+    // Jika pengguna memilih opsi "Semua Provinsi", set state provinsi menjadi string kosong
+    if (valueFromSelect === ALL_PROVINCES_VALUE) {
+      setSelectedProvince("");
+      setSelectedRegion(""); // Reset juga region
+      setAvailableRegions([]);
+    } else {
+      setSelectedProvince(valueFromSelect);
+      setSelectedRegion(""); // Reset region setiap kali provinsi berubah
+      if (valueFromSelect) {
+        try {
+          const provinceObj = provinces.find(p => p.name === valueFromSelect);
+          if (provinceObj) {
+            const regionsResponse = await getRegions({ provinceId: provinceObj.id });
+            if (regionsResponse && Array.isArray(regionsResponse.data)) {
+              setAvailableRegions(regionsResponse.data);
+            } else {
+              setAvailableRegions([]);
+            }
+          } else {
+            setAvailableRegions([]);
+          }
+        } catch (err) {
+          console.error("Failed to fetch regions for province:", err);
+          setAvailableRegions([]);
+        }
+      } else {
+         // Ini seharusnya tidak terjadi jika "ALL_PROVINCES_VALUE" ditangani dengan benar
+        setAvailableRegions([]);
+      }
+    }
+  };
+
+  const handleRegionChange = (valueFromSelect) => {
+    // Jika pengguna memilih opsi "Semua Daerah", set state region menjadi string kosong
+    if (valueFromSelect === ALL_REGIONS_VALUE) {
+      setSelectedRegion("");
+    } else {
+      setSelectedRegion(valueFromSelect);
+    }
+  };
+
+  const handleTypeChange = (value) => {
+    setSelectedType(value);
+  };
+
   const resetFilters = () => {
     setSearchQuery("");
     setSelectedProvince("");
     setSelectedRegion("");
     setSelectedType("All Types");
     setAvailableRegions([]);
-    setFilteredCultures(allCultures); // Reset to all original cultures
+    setFilteredCultures(Array.isArray(allCultures) ? allCultures : []);
   };
 
   if (loading) {
-    return <div className="text-center py-10">Loading cultural items...</div>;
+    return <div className="text-center py-10">Memuat item budaya...</div>;
   }
 
   if (error) {
@@ -152,18 +181,18 @@ export default function CulturesPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">
-          Cultural Exhibitions
+          Pameran Budaya
         </h2>
         <p className="text-muted-foreground">
-          Explore cultural heritage from across Indonesia
+          Jelajahi warisan budaya dari seluruh Indonesia
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Search & Filter</CardTitle>
+          <CardTitle>Cari & Filter</CardTitle>
           <CardDescription>
-            Find cultural items by name, type, or location
+            Temukan item budaya berdasarkan nama, tipe, atau lokasi
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -172,7 +201,7 @@ export default function CulturesPage() {
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search cultural items..."
+                  placeholder="Cari item budaya..."
                   className="pl-8"
                   value={searchQuery}
                   onChange={handleSearch}
@@ -182,7 +211,8 @@ export default function CulturesPage() {
             <div>
               <Select value={selectedType} onValueChange={handleTypeChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Type" />
+                  {/* selectedType tidak akan pernah "" karena inisialisasi "All Types" */}
+                  <SelectValue placeholder="Tipe" />
                 </SelectTrigger>
                 <SelectContent>
                   {cultureTypes.map((type) => (
@@ -194,16 +224,15 @@ export default function CulturesPage() {
               </Select>
             </div>
             <div>
-              <Select
-                value={selectedProvince}
-                onValueChange={handleProvinceChange}
-              >
+              {/* `selectedProvince` bisa "" (menampilkan placeholder) */}
+              <Select value={selectedProvince} onValueChange={handleProvinceChange} >
                 <SelectTrigger>
-                  <SelectValue placeholder="Province" />
+                  <SelectValue placeholder="Provinsi" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Provinces</SelectItem>
-                  {provinces.map((province) => (
+                  {/* PERBAIKAN: Gunakan nilai konstanta untuk opsi "Semua" */}
+                  <SelectItem value={ALL_PROVINCES_VALUE}>Semua Provinsi</SelectItem>
+                  {Array.isArray(provinces) && provinces.map((province) => (
                     <SelectItem key={province.id} value={province.name}>
                       {province.name}
                     </SelectItem>
@@ -212,17 +241,19 @@ export default function CulturesPage() {
               </Select>
             </div>
             <div>
+              {/* `selectedRegion` bisa "" (menampilkan placeholder) */}
               <Select
                 value={selectedRegion}
                 onValueChange={handleRegionChange}
                 disabled={!selectedProvince || availableRegions.length === 0}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Region" />
+                  <SelectValue placeholder="Daerah" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Regions</SelectItem>
-                  {availableRegions.map((region) => (
+                  {/* PERBAIKAN: Gunakan nilai konstanta untuk opsi "Semua" */}
+                  <SelectItem value={ALL_REGIONS_VALUE}>Semua Daerah</SelectItem>
+                  {Array.isArray(availableRegions) && availableRegions.map((region) => (
                     <SelectItem key={region.id} value={region.name}>
                       {region.name}
                     </SelectItem>
@@ -232,7 +263,7 @@ export default function CulturesPage() {
             </div>
             <div className="flex items-center">
               <Button variant="outline" onClick={resetFilters}>
-                Reset Filters
+                Reset Filter
               </Button>
             </div>
           </div>
@@ -242,18 +273,18 @@ export default function CulturesPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium">
-            Results ({filteredCultures.length})
+            Hasil ({filteredCultures.length})
           </h3>
           <div className="flex items-center space-x-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select defaultValue="name">
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder="Urutkan berdasarkan" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="name">Sort by Name</SelectItem>
-                <SelectItem value="type">Sort by Type</SelectItem>
-                <SelectItem value="region">Sort by Region</SelectItem>
+                <SelectItem value="name">Nama</SelectItem>
+                <SelectItem value="type">Tipe</SelectItem>
+                <SelectItem value="region">Daerah</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -269,27 +300,28 @@ export default function CulturesPage() {
               >
                 <div className="relative h-48">
                   <img
-                    src={culture.image || "/placeholder.svg"}
-                    alt={culture.name}
+                    src={culture.image || "/placeholder.svg?height=200&width=400"}
+                    alt={culture.name || "Nama Budaya"}
                     className="h-full w-full object-cover"
+                    onError={(e) => { e.target.onerror = null; e.target.src = "/placeholder.svg?height=200&width=400&text=Error+Load+Image"; }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   <div className="absolute top-3 right-3">
-                    <Badge variant="secondary">{culture.type}</Badge>
+                    <Badge variant="secondary">{culture.type || "Tipe Tidak Ada"}</Badge>
                   </div>
                   <div className="absolute bottom-3 left-3 text-white">
-                    <h3 className="font-bold text-xl">{culture.name}</h3>
+                    <h3 className="font-bold text-xl">{culture.name || "Nama Tidak Tersedia"}</h3>
                     <p className="text-sm opacity-90">
-                      {culture.region}, {culture.province}
+                      {culture.region || "Daerah Tidak Ada"}, {culture.province || "Provinsi Tidak Ada"}
                     </p>
                   </div>
                 </div>
                 <CardContent className="pt-4">
                   <p className="text-sm line-clamp-2 text-muted-foreground mb-4">
-                    {culture.description}
+                    {culture.description || "Deskripsi tidak tersedia."}
                   </p>
                   <div className="flex justify-end">
-                    <Button size="sm">View Details</Button>
+                    <Button size="sm">Lihat Detail</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -300,14 +332,13 @@ export default function CulturesPage() {
             <CardContent className="flex flex-col items-center justify-center py-10">
               <Search className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-xl font-medium mb-2">
-                No cultural items found
+                Tidak ada item budaya yang ditemukan
               </h3>
               <p className="text-center text-muted-foreground mb-4">
-                We couldn't find any cultural items matching your search
-                criteria.
+                Kami tidak dapat menemukan item budaya yang sesuai dengan kriteria pencarian Anda.
               </p>
               <Button variant="outline" onClick={resetFilters}>
-                Clear Filters
+                Hapus Filter
               </Button>
             </CardContent>
           </Card>

@@ -17,17 +17,20 @@ import {
 } from "@/components/ui/select";
 import { Calendar, Search, Filter } from "lucide-react";
 import EventCard from "@/components/user/event-card";
-// import { mockEvents, mockProvinces, mockRegions } from "@/lib/mock-data"; // Remove this line
-import { getEvents, getProvinces, getRegions } from '@/lib/api'; // Import API functions
+import { getEvents, getProvinces, getRegions } from '@/lib/api';
+
+// Definisikan nilai konstanta untuk opsi "Semua"
+const ALL_PROVINCES_VALUE = "__ALL_PROVINCES__";
+const ALL_REGIONS_VALUE = "__ALL_REGIONS__";
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProvince, setSelectedProvince] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState("");
-  const [allEvents, setAllEvents] = useState([]); // Store all events
-  const [filteredEvents, setFilteredEvents] = useState([]); // Store filtered events
-  const [provinces, setProvinces] = useState([]); // State for provinces from API
-  const [availableRegions, setAvailableRegions] = useState([]); // State for regions from API
+  const [selectedProvince, setSelectedProvince] = useState(""); // "" berarti semua
+  const [selectedRegion, setSelectedRegion] = useState("");   // "" berarti semua
+  const [allEvents, setAllEvents] = useState([]); // Inisialisasi sebagai array kosong
+  const [filteredEvents, setFilteredEvents] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [availableRegions, setAvailableRegions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -35,77 +38,110 @@ export default function EventsPage() {
     const fetchInitialData = async () => {
       try {
         setLoading(true);
+        setError(null); // Reset error
         const eventsResponse = await getEvents();
-        setAllEvents(eventsResponse.data);
-        setFilteredEvents(eventsResponse.data); // Initialize filtered events with all events
-
         const provincesResponse = await getProvinces();
-        setProvinces(provincesResponse.data);
+
+        // PERBAIKAN: Pastikan eventsResponse.data adalah array
+        if (eventsResponse && Array.isArray(eventsResponse.data)) {
+          setAllEvents(eventsResponse.data);
+          setFilteredEvents(eventsResponse.data);
+        } else {
+          console.warn("Expected eventsResponse.data to be an array, but got:", eventsResponse?.data);
+          setAllEvents([]);
+          setFilteredEvents([]);
+        }
+
+        // PERBAIKAN: Pastikan provincesResponse.data adalah array
+        if (provincesResponse && Array.isArray(provincesResponse.data)) {
+          setProvinces(provincesResponse.data);
+        } else {
+          console.warn("Expected provincesResponse.data to be an array, but got:", provincesResponse?.data);
+          setProvinces([]);
+        }
         setLoading(false);
       } catch (err) {
         console.error("Failed to fetch initial event data:", err);
-        setError("Failed to load events or provinces. Please try again later.");
+        setError("Gagal memuat data event atau provinsi. Silakan coba lagi nanti.");
+        setAllEvents([]); // Fallback ke array kosong jika error
+        setFilteredEvents([]);
+        setProvinces([]);
         setLoading(false);
       }
     };
     fetchInitialData();
   }, []);
 
-  useEffect(() => {
-    // This effect runs when filters change
-    applyFilters(searchQuery, selectedProvince, selectedRegion);
-  }, [searchQuery, selectedProvince, selectedRegion, allEvents]); // Depend on allEvents too, if it changes after initial load
-
-  const handleProvinceChange = async (value) => {
-    setSelectedProvince(value);
-    setSelectedRegion(""); // Reset region when province changes
-    if (value) {
-      try {
-        // Filter regions by provinceId (assuming backend accepts this)
-        const provinceObj = provinces.find(p => p.name === value);
-        if (provinceObj) {
-          const regionsResponse = await getRegions({ provinceId: provinceObj.id });
-          setAvailableRegions(regionsResponse.data);
-        } else {
-          setAvailableRegions([]);
-        }
-      } catch (err) {
-        console.error("Failed to fetch regions for province:", err);
-        setAvailableRegions([]);
-      }
-    } else {
-      setAvailableRegions([]);
-    }
-  };
-
-  const handleRegionChange = (value) => {
-    setSelectedRegion(value);
-  };
-
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
-  };
-
   const applyFilters = (query, provinceName, regionName) => {
-    let currentFiltered = [...allEvents];
+    // PERBAIKAN: Pastikan allEvents adalah array sebelum di-spread
+    let currentFiltered = Array.isArray(allEvents) ? [...allEvents] : [];
 
     if (query) {
       currentFiltered = currentFiltered.filter(
         (event) =>
-          event.name.toLowerCase().includes(query.toLowerCase()) ||
-          event.description.toLowerCase().includes(query.toLowerCase())
+          (event.name && event.name.toLowerCase().includes(query.toLowerCase())) ||
+          (event.description && event.description.toLowerCase().includes(query.toLowerCase()))
       );
     }
 
-    if (provinceName) {
+    if (provinceName) { // Filter jika provinceName tidak kosong
       currentFiltered = currentFiltered.filter((event) => event.province === provinceName);
     }
 
-    if (regionName) {
+    if (regionName) { // Filter jika regionName tidak kosong
       currentFiltered = currentFiltered.filter((event) => event.region === regionName);
     }
 
     setFilteredEvents(currentFiltered);
+  };
+
+  useEffect(() => {
+    applyFilters(searchQuery, selectedProvince, selectedRegion);
+  }, [searchQuery, selectedProvince, selectedRegion, allEvents]);
+
+
+  const handleProvinceChange = async (valueFromSelect) => {
+    if (valueFromSelect === ALL_PROVINCES_VALUE) {
+      setSelectedProvince("");
+      setSelectedRegion("");
+      setAvailableRegions([]);
+    } else {
+      setSelectedProvince(valueFromSelect);
+      setSelectedRegion("");
+      if (valueFromSelect) {
+        try {
+          const provinceObj = provinces.find(p => p.name === valueFromSelect);
+          if (provinceObj) {
+            const regionsResponse = await getRegions({ provinceId: provinceObj.id });
+            if (regionsResponse && Array.isArray(regionsResponse.data)) {
+              setAvailableRegions(regionsResponse.data);
+            } else {
+              console.warn("Expected regionsResponse.data to be an array for province change, but got:", regionsResponse?.data);
+              setAvailableRegions([]);
+            }
+          } else {
+            setAvailableRegions([]);
+          }
+        } catch (err) {
+          console.error("Failed to fetch regions for province:", err);
+          setAvailableRegions([]);
+        }
+      } else {
+        setAvailableRegions([]);
+      }
+    }
+  };
+
+  const handleRegionChange = (valueFromSelect) => {
+    if (valueFromSelect === ALL_REGIONS_VALUE) {
+      setSelectedRegion("");
+    } else {
+      setSelectedRegion(valueFromSelect);
+    }
+  };
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
   };
 
   const resetFilters = () => {
@@ -113,11 +149,11 @@ export default function EventsPage() {
     setSelectedProvince("");
     setSelectedRegion("");
     setAvailableRegions([]);
-    setFilteredEvents(allEvents); // Reset to all original events
+    setFilteredEvents(Array.isArray(allEvents) ? allEvents : []); // Pastikan allEvents adalah array
   };
 
   if (loading) {
-    return <div className="text-center py-10">Loading events...</div>;
+    return <div className="text-center py-10">Memuat event...</div>;
   }
 
   if (error) {
@@ -127,17 +163,17 @@ export default function EventsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Events</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Event</h2>
         <p className="text-muted-foreground">
-          Browse and join cultural events across Indonesia
+          Telusuri dan ikuti event budaya di seluruh Indonesia
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Search & Filter</CardTitle>
+          <CardTitle>Cari & Filter</CardTitle>
           <CardDescription>
-            Find events by name, location, or description
+            Temukan event berdasarkan nama, lokasi, atau deskripsi
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -146,7 +182,7 @@ export default function EventsPage() {
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search events..."
+                  placeholder="Cari event..."
                   className="pl-8"
                   value={searchQuery}
                   onChange={handleSearch}
@@ -155,15 +191,16 @@ export default function EventsPage() {
             </div>
             <div className="w-full md:w-[200px]">
               <Select
-                value={selectedProvince}
+                value={selectedProvince} // Bisa ""
                 onValueChange={handleProvinceChange}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Province" />
+                  <SelectValue placeholder="Provinsi" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Provinces</SelectItem> {/* Option to select all */}
-                  {provinces.map((province) => (
+                  {/* PERBAIKAN: Gunakan nilai konstanta untuk opsi "Semua" */}
+                  <SelectItem value={ALL_PROVINCES_VALUE}>Semua Provinsi</SelectItem>
+                  {Array.isArray(provinces) && provinces.map((province) => (
                     <SelectItem key={province.id} value={province.name}>
                       {province.name}
                     </SelectItem>
@@ -173,17 +210,18 @@ export default function EventsPage() {
             </div>
             <div className="w-full md:w-[200px]">
               <Select
-                value={selectedRegion}
+                value={selectedRegion} // Bisa ""
                 onValueChange={handleRegionChange}
-                disabled={!selectedProvince || availableRegions.length === 0}
+                disabled={!selectedProvince || !Array.isArray(availableRegions) || availableRegions.length === 0}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Region" />
+                  <SelectValue placeholder="Daerah" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Regions</SelectItem> {/* Option to select all */}
-                  {availableRegions.map((region) => (
-                    <SelectItem key={region.id} value={region.name}> {/* Assuming region also has an ID */}
+                   {/* PERBAIKAN: Gunakan nilai konstanta untuk opsi "Semua" */}
+                  <SelectItem value={ALL_REGIONS_VALUE}>Semua Daerah</SelectItem>
+                  {Array.isArray(availableRegions) && availableRegions.map((region) => (
+                    <SelectItem key={region.id} value={region.name}>
                       {region.name}
                     </SelectItem>
                   ))}
@@ -191,7 +229,7 @@ export default function EventsPage() {
               </Select>
             </div>
             <Button variant="outline" onClick={resetFilters}>
-              Reset Filters
+              Reset Filter
             </Button>
           </div>
         </CardContent>
@@ -200,18 +238,17 @@ export default function EventsPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium">
-            Results ({filteredEvents.length})
+            Hasil ({filteredEvents.length})
           </h3>
           <div className="flex items-center space-x-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select defaultValue="date">
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder="Urutkan berdasarkan" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="date">Sort by Date</SelectItem>
-                <SelectItem value="name">Sort by Name</SelectItem>
-                {/* Add more sorting options as needed */}
+                <SelectItem value="date">Tanggal</SelectItem>
+                <SelectItem value="name">Nama</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -227,12 +264,12 @@ export default function EventsPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-10">
               <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-medium mb-2">No events found</h3>
+              <h3 className="text-xl font-medium mb-2">Tidak ada event yang ditemukan</h3>
               <p className="text-center text-muted-foreground mb-4">
-                We couldn't find any events matching your search criteria.
+                Kami tidak dapat menemukan event yang sesuai dengan kriteria pencarian Anda.
               </p>
               <Button variant="outline" onClick={resetFilters}>
-                Clear Filters
+                Hapus Filter
               </Button>
             </CardContent>
           </Card>

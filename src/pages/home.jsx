@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import heroImage from '../assets/images/hero.webp';
+import heroImage from '../assets/images/hero.webp'; // Pastikan path ini benar
 
 import { FaFacebook, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 import { getEvents } from '@/lib/api';
@@ -15,13 +15,31 @@ const Home = () => {
     const fetchEvents = async () => {
       try {
         setLoadingEvents(true);
+        setErrorEvents(null); // Reset error state
         const response = await getEvents();
-        const sortedEvents = response.data.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setLatestEvents(sortedEvents.slice(0, 3));
+
+        // PERBAIKAN UTAMA: Pastikan response.data adalah array sebelum diolah
+        if (response && Array.isArray(response.data)) {
+          const sortedEvents = [...response.data].sort((a, b) => {
+            // Tambahkan pengecekan jika date tidak valid
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            if (isNaN(dateA) || isNaN(dateB)) return 0; // Atau logika sortir lain jika tanggal tidak valid
+            return dateB - dateA; // Urutkan dari yang terbaru
+          });
+          setLatestEvents(sortedEvents.slice(0, 3));
+        } else {
+          // Jika response.data bukan array, set ke array kosong atau tangani error
+          console.warn("Expected response.data to be an array for events, but got:", response?.data);
+          setLatestEvents([]);
+          // Pertimbangkan untuk set error di sini jika format tidak sesuai harapan
+          // setErrorEvents("Format data event tidak sesuai.");
+        }
         setLoadingEvents(false);
       } catch (err) {
         console.error("Failed to fetch latest events:", err);
         setErrorEvents("Gagal memuat event terbaru. Silakan coba lagi nanti.");
+        setLatestEvents([]); // Pastikan latestEvents adalah array kosong jika ada error
         setLoadingEvents(false);
       }
     };
@@ -49,7 +67,7 @@ const Home = () => {
               <p className="text-xl md:text-2xl text-gray-200 mb-8 max-w-lg mx-auto md:mx-0">
                 Menyelami Keindahan Budaya Nusantara
               </p>
-              <Link to="/events" className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 transform hover:scale-105 shadow-lg"> {/* Diperbarui ke /events */}
+              <Link to="/user/events" className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 transform hover:scale-105 shadow-lg">
                 Jelajahi Sekarang!
               </Link>
             </div>
@@ -93,11 +111,11 @@ const Home = () => {
                     <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-2">{event.name}</h3>
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2">{event.description}</p>
                     <div className="flex items-center text-sm text-gray-500 mb-4">
-                        <Calendar className="h-4 w-4 mr-2" /> {event.date}
+                        <Calendar className="h-4 w-4 mr-2" /> {event.date ? new Date(event.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'}) : 'Tanggal tidak tersedia'}
                         <MapPin className="h-4 w-4 ml-4 mr-2" /> {event.location}, {event.region}
                     </div>
                     <Link
-                      to={`/events/${event.id}`} // Diperbarui ke /events/:id
+                      to={`/user/events/${event.id}`}
                       className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
                     >
                       Lihat Detail
@@ -116,8 +134,8 @@ const Home = () => {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">Apa Kata Mereka</h2>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Testimonial items */}
             <div className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-100">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
@@ -130,7 +148,6 @@ const Home = () => {
               </div>
               <p className="text-gray-700 leading-relaxed">"Festival Budaya Bali memberikan pengalaman yang luar biasa! Saya belajar banyak tentang budaya Bali yang kaya dan beragam."</p>
             </div>
-
             <div className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-100">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
@@ -143,7 +160,6 @@ const Home = () => {
               </div>
               <p className="text-gray-700 leading-relaxed">"Pameran Kesenian Jawa memberi kesempatan bagi seniman lokal seperti saya untuk menunjukkan karya dan melestarikan budaya."</p>
             </div>
-
             <div className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-100">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
