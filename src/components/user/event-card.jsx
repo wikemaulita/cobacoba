@@ -1,3 +1,5 @@
+// src/components/user/event-card.jsx
+
 import { cn } from "@/lib/utils";
 
 import { useState } from "react";
@@ -7,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Users, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import RatingStars from "@/components/user/rating-stars";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // Pastikan ini diimpor
 
 export default function EventCard({ event }) {
   const navigate = useNavigate();
@@ -27,7 +29,8 @@ export default function EventCard({ event }) {
   };
 
   const handleCardClick = () => {
-    navigate(`/user/events/${event.id}`);
+    // PERBAIKAN DI SINI: Ubah URL agar sesuai dengan route publik
+    navigate(`/Event/${event.id}`); // Ubah dari `/user/event/${event.id}`
   };
 
   return (

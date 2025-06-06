@@ -66,7 +66,7 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-8">
-              <Link to="/events" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300"> {/* Diperbarui ke /events */}
+              <Link to="/Event" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300"> {/* Diperbarui ke /events */}
                 Event
               </Link>
               <Link to="/pulau" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300">

@@ -67,7 +67,7 @@ const Home = () => {
               <p className="text-xl md:text-2xl text-gray-200 mb-8 max-w-lg mx-auto md:mx-0">
                 Menyelami Keindahan Budaya Nusantara
               </p>
-              <Link to="/user/events" className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 transform hover:scale-105 shadow-lg">
+              <Link to="/Event" className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 transform hover:scale-105 shadow-lg">
                 Jelajahi Sekarang!
               </Link>
             </div>

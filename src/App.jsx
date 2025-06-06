@@ -1,3 +1,5 @@
+// src/App.jsx
+
 import {
   Route,
   BrowserRouter as Router,
@@ -14,10 +16,10 @@ import Register from "./pages/auth/Register";
 import DashboardSuperAdmin from "./pages/super-admin/DashboardSuperAdmin";
 import DashboardAdminDaerah from "./pages/admin-daerah/DashboardAdminDaerah";
 import UserDashboard from "./pages/user/DashboardUser";
-import EventsPage from "./pages/user/Event"; // Tetap diimpor karena akan digunakan sebagai rute publik
+import EventsPage from "./pages/user/Event"; // Pastikan path ini benar
 import CulturesPage from "./pages/user/Culture";
 import ProvincesPage from "./pages/user/Province";
-import EventDetailPage from "./pages/user/DetailEvent"; // Tetap diimpor karena akan digunakan sebagai rute publik
+import EventDetailPage from "./pages/user/DetailEvent"; // Pastikan path ini benar
 import CultureDetailPage from "./pages/user/DetailCulture";
 import ProvinceDetailPage from "./pages/user/DetailProvince";
 import DetailPulauPage from "./pages/user/DetailPulau";
@@ -55,9 +57,9 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Rute Event Publik - Dipindahkan dari dalam ProtectedRoute */}
-          <Route path="/events" element={<EventsPage />} />
-          <Route path="/events/:id" element={<EventDetailPage />} />
+          {/* Rute Event PUBLIK - DI SINI */}
+          <Route path="/Event" element={<EventsPage />} />
+          <Route path="/Event/:id" element={<EventDetailPage />} />
 
           {/* Rute Terlindungi untuk Super Admin */}
           <Route
@@ -83,14 +85,17 @@ function AppContent() {
             <Route path="events" element={<EventManagement />} />
           </Route>
 
-          {/* Rute Terlindungi untuk User (tidak termasuk events lagi) */}
+          {/* Rute Terlindungi untuk User - TANPA RUTE EVENTS DI SINI */}
           <Route
             path="/user"
             element={<ProtectedRoute allowedRoles={['USER', 'SUPER_ADMIN', 'ADMIN_DAERAH']}><UserLayout /></ProtectedRoute>}
           >
             <Route index element={<UserDashboard />} />
             <Route path="dashboard" element={<UserDashboard />} />
-            {/* Rute events sebelumnya di sini, sekarang sudah dipindahkan */}
+            {/* HAPUS Rute events dari sini */}
+            {/* <Route path="events" element={<EventsPage />} /> */}
+            {/* <Route path="events/:id" element={<EventDetailPage />} /> */}
+
             <Route path="cultures" element={<CulturesPage />} />
             <Route path="provinces" element={<ProvincesPage />} />
             <Route path="cultures/:id" element={<CultureDetailPage />} />
