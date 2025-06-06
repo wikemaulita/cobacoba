@@ -6,7 +6,7 @@ import {
 } from "react-router-dom";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
+import Home from "./pages/home";
 import Login from "./pages/auth/Login";
 import NotFound from "./pages/NotFound";
 import Pulau from "./pages/pulau";
