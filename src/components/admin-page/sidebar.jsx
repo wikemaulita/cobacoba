@@ -11,7 +11,6 @@ import {
   Menu,
   X,
   Home,
-  Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -94,16 +93,19 @@ export default function Sidebar({ role }) {
     logout();
   };
 
+  const isActive = (path) => location.pathname.startsWith(path);
+
   return (
     <div
       className={cn(
-        "bg-card text-card-foreground border-r transition-all duration-300 flex flex-col",
+        // PERUBAHAN: Latar belakang gelap, teks terang
+        "bg-slate-800 text-slate-200 border-r border-slate-700 transition-all duration-300 flex flex-col",
         collapsed ? "w-20" : "w-64"
       )}
     >
-      <div className="p-4 border-b flex items-center justify-between">
+      <div className="p-4 border-b border-slate-700 flex items-center justify-between h-16">
         {!collapsed && (
-          <h1 className="font-bold text-xl">
+          <h1 className="font-bold text-xl text-white">
             {user
               ? user.role === "SUPER_ADMIN"
                 ? "Super Admin"
@@ -117,7 +119,8 @@ export default function Sidebar({ role }) {
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="ml-auto"
+          // PERUBAHAN: Warna tombol hover
+          className="ml-auto text-slate-300 hover:bg-slate-700 hover:text-white"
         >
           {collapsed ? <Menu className="h-5 w-5" /> : <X className="h-5 w-5" />}
         </Button>
@@ -134,11 +137,10 @@ export default function Sidebar({ role }) {
             ).map((item) => (
                 <Button
                   key={item.id}
-                  variant={
-                    location.pathname === item.path ? "secondary" : "ghost"
-                  }
+                  variant="ghost" // PERUBAHAN: Variant ghost untuk semua
                   className={cn(
-                    "w-full justify-start mb-1",
+                    "w-full justify-start mb-1 text-slate-300 hover:bg-slate-700 hover:text-white", // PERUBAHAN: Style default
+                    isActive(item.path) && "bg-blue-600 text-white hover:bg-blue-500", // PERUBAHAN: Style item aktif
                     collapsed ? "px-3" : "px-4"
                   )}
                   onClick={() => navigate(item.path)}
@@ -151,33 +153,31 @@ export default function Sidebar({ role }) {
         </nav>
       </div>
 
-      <div className="p-4 border-t">
+      <div className="p-4 border-t border-slate-700">
         <div className="flex items-center">
           <Avatar>
             <AvatarImage src="/placeholder-user.jpg" />
-            <AvatarFallback>
+            <AvatarFallback className="bg-slate-600 text-white">
               {user ? user.username.charAt(0).toUpperCase() : "AD"}
             </AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="ml-3">
-              <p className="text-sm font-medium">
+              <p className="text-sm font-medium text-white">
                 {user
                   ? user.username
                   : role === "super-admin"
                     ? "Super Admin"
-                    : role === "admin-daerah"
-                      ? "Admin Daerah"
-                      : "Unknown User"}
+                    : "Admin Daerah"}
               </p>
-              <p className="text-xs text-muted-foreground">{user ? user.email : "admin@example.com"}</p>
+              <p className="text-xs text-slate-400">{user ? user.email : "admin@example.com"}</p>
             </div>
           )}
         </div>
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start mt-4",
+            "w-full justify-start mt-4 text-slate-300 hover:bg-slate-700 hover:text-white", // PERUBAHAN: Style tombol logout
             collapsed ? "px-3" : "px-4"
           )}
           onClick={handleLogout}
