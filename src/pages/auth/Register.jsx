@@ -1,7 +1,7 @@
 // src/pages/auth/Register.jsx
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { useAuth } from '@/Contexts/AuthContext'; // Import useAuth
 import { useToast } from '@/hooks/use-toast'; // Import useToast
 
 const Register = () => {
