@@ -29,7 +29,7 @@ import RegionManagement from "./components/admin-page/region-management";
 import CultureManagement from "./components/admin-page/culture-management";
 import EventManagement from "./components/admin-page/event-management";
 
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider } from "./Contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function AppContent() {
