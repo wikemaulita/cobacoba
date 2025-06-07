@@ -61,10 +61,10 @@ const cultureTypes = [
 
 export default function CultureManagement() {
   const { toast } = useToast();
-  const [cultures, setCultures] = useState([]); // State for cultures
-  const [provinces, setProvinces] = useState([]); // State for provinces
-  const [allRegions, setAllRegions] = useState([]); // Store all regions for filtering
-  const [availableRegions, setAvailableRegions] = useState([]); // Filtered regions for dropdown
+  const [cultures, setCultures] = useState([]); 
+  const [provinces, setProvinces] = useState([]); 
+  const [allRegions, setAllRegions] = useState([]); 
+  const [availableRegions, setAvailableRegions] = useState([]); 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -74,8 +74,8 @@ export default function CultureManagement() {
     description: "",
     image: "",
     type: "",
-    regionId: "", // Store region ID
-    provinceId: "", // Store province ID
+    regionId: "", 
+    provinceId: "", 
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -87,7 +87,7 @@ export default function CultureManagement() {
       const [culturesResponse, provincesResponse, regionsResponse] = await Promise.all([
         getCultures(),
         getProvinces(),
-        getRegions() // Fetch all regions initially
+        getRegions() 
       ]);
 
       const culturesData = culturesResponse.data.map(culture => {
@@ -102,7 +102,7 @@ export default function CultureManagement() {
 
       setCultures(culturesData);
       setProvinces(provincesResponse.data);
-      setAllRegions(regionsResponse.data); // Store all regions
+      setAllRegions(regionsResponse.data); 
       setLoading(false);
     } catch (err) {
       console.error("Failed to fetch data:", err);
@@ -125,7 +125,7 @@ export default function CultureManagement() {
       regionId: "",
       provinceId: "",
     });
-    setAvailableRegions([]); // Clear regions for new entry
+    setAvailableRegions([]); 
     setIsDialogOpen(true);
   };
 
@@ -144,7 +144,6 @@ export default function CultureManagement() {
       regionId: culture.regionId,
       provinceId: culture.provinceId,
     });
-    // Filter available regions based on the selected culture's province
     setAvailableRegions(allRegions.filter(region => region.provinceId === culture.provinceId));
     setIsDialogOpen(true);
   };
@@ -167,7 +166,7 @@ export default function CultureManagement() {
     setFormData((prev) => ({
       ...prev,
       provinceId: provinceId,
-      regionId: "", // Reset region when province changes
+      regionId: "", 
     }));
     setAvailableRegions(allRegions.filter(region => region.provinceId === provinceId));
   };
@@ -190,21 +189,19 @@ export default function CultureManagement() {
     e.preventDefault();
     try {
       if (selectedCulture) {
-        // Edit existing culture
         await updateCulture(selectedCulture.id, formData);
         toast({
           title: "Culture Updated",
           description: `${formData.name} has been updated successfully`,
         });
       } else {
-        // Add new culture
         await createCulture(formData);
         toast({
           title: "Culture Added",
           description: `${formData.name} has been added successfully`,
         });
       }
-      fetchCulturesProvincesAndRegions(); // Re-fetch data to update the table
+      fetchCulturesProvincesAndRegions(); 
       setIsDialogOpen(false);
     } catch (err) {
       console.error("Failed to save culture:", err);
@@ -223,7 +220,7 @@ export default function CultureManagement() {
         title: "Culture Deleted",
         description: `${selectedCulture.name} has been deleted successfully`,
       });
-      fetchCulturesProvincesAndRegions(); // Re-fetch data to update the table
+      fetchCulturesProvincesAndRegions(); 
       setIsDeleteDialogOpen(false);
     } catch (err) {
       console.error("Failed to delete culture:", err);
@@ -269,7 +266,6 @@ export default function CultureManagement() {
               <div className="text-2xl font-bold">{cultures.length}</div>
             </CardContent>
           </Card>
-          {/* These cards would need specific API calls or aggregation logic */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -561,7 +557,6 @@ export default function CultureManagement() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>

@@ -23,7 +23,6 @@ import {
   Cell,
 } from "recharts";
 
-// Data mock untuk chart, Anda bisa menggantinya dengan data dari API
 const provinceData = [
   { name: "Bali", cultures: 12, events: 8, regions: 5 },
   { name: "DI Yogyakarta", cultures: 10, events: 6, regions: 3 },
@@ -63,7 +62,6 @@ export default function HomeDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-         {/* PERUBAHAN: Menambahkan border aksen pada Card */}
         <Card className="border-l-4 border-sky-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -160,7 +158,6 @@ export default function HomeDashboard() {
             </Card>
           </div>
         </TabsContent>
-        {/* Konten Tabs lainnya tetap sama */}
       </Tabs>
     </div>
   );

@@ -4,13 +4,14 @@
       "src": "package.json",
       "use": "@vercel/node",
       "config": {
-        "maxDuration": 60
+        "maxDuration": 1800,
+        "cache":true
       }
     }
   ],
   "functions": {
     "api/**.js": {
-      "maxDuration": 60
+      "maxDuration": 1800
     }
   }
 }

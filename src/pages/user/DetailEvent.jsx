@@ -43,17 +43,16 @@ import {
   joinEvent,
   submitUserRating,
   deleteRatingParticipation,
-  getProvinces, // Diperlukan untuk memetakan nama provinsi
-  getRegions,   // Diperlukan untuk memetakan nama daerah ke provinsi
+  getProvinces, 
+  getRegions,  
 } from '@/lib/api';
 
-// PERBAIKAN DI SINI: Ubah nama fungsi menjadi EventDetailPage
 export default function EventDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [event, setEvent] = useState(null); // Akan menyimpan objek event yang sudah dikonversi
+  const [event, setEvent] = useState(null); 
   const [isJoined, setIsJoined] = useState(false);
   const [isRatingOpen, setIsRatingOpen] = useState(false);
   const [userRating, setUserRating] = useState(0);
@@ -64,7 +63,6 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // State tambahan untuk menampilkan nama provinsi (karena API event tidak menyediakan langsung)
   const [provinceName, setProvinceName] = useState('N/A');
 
   useEffect(() => {
@@ -75,26 +73,24 @@ export default function EventDetailPage() {
 
         // --- 1. Ambil data utama event ---
         const eventResponse = await getEventDetail(eventId);
-        console.log("Respons API Detail Event Mentah:", eventResponse); // DEBUG: Log respons detail event
+        console.log("Respons API Detail Event Mentah:", eventResponse);
 
         if (eventResponse && eventResponse.data && eventResponse.data.event) {
           const apiEvent = eventResponse.data.event;
-          // Konversi properti API ke properti yang digunakan di JSX
           const formattedEvent = {
             id: apiEvent.id,
             name: apiEvent.nama,
             description: apiEvent.deskripsi,
             image: apiEvent.gambar,
             date: new Date(apiEvent.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'}),
-            rawDate: apiEvent.tanggal, // Simpan tanggal mentah jika perlu
+            rawDate: apiEvent.tanggal,
             location: apiEvent.lokasi,
-            regionId: apiEvent.daerahId, // Simpan ID daerah untuk pemetaan
-            region: apiEvent.daerah?.nama || 'N/A', // Nama daerah dari API
-            attendees: apiEvent.jumlah_peserta || 0, // Asumsi ada properti jumlah_peserta di API
+            regionId: apiEvent.daerahId,
+            region: apiEvent.daerah?.nama || 'N/A', 
+            attendees: apiEvent.jumlah_peserta || 0, 
           };
           setEvent(formattedEvent);
 
-          // --- 1a. Ambil dan petakan nama provinsi berdasarkan daerahId event ---
           if (apiEvent.daerahId) {
             try {
               const allRegionsResponse = await getRegions();
@@ -112,10 +108,10 @@ export default function EventDetailPage() {
               }
             } catch (provRegionErr) {
               console.error("Gagal memetakan daerah ke provinsi:", provRegionErr);
-              setProvinceName('N/A'); // Fallback jika gagal
+              setProvinceName('N/A');
             }
           } else {
-             setProvinceName('N/A'); // Jika event tidak punya daerahId
+             setProvinceName('N/A'); 
           }
 
         } else {
@@ -123,11 +119,9 @@ export default function EventDetailPage() {
           setEvent(null);
         }
 
-        // --- 2. Ambil data rating & ulasan ---
         const reviewsResponse = await getEventRatings(eventId);
-        console.log("Respons API Ulasan Mentah:", reviewsResponse); // DEBUG: Log respons ulasan
+        console.log("Respons API Ulasan Mentah:", reviewsResponse); 
 
-        // Asumsi struktur respons API ulasan: { message: "success", data: [...] }
         if (reviewsResponse && reviewsResponse.data && Array.isArray(reviewsResponse.data.data)) {
           setReviews(reviewsResponse.data.data);
         } else {
@@ -135,11 +129,9 @@ export default function EventDetailPage() {
           setReviews([]);
         }
 
-        // --- 3. Ambil rata-rata rating ---
         const averageRatingResponse = await getAverageRating(eventId);
-        console.log("Respons API Rating Rata-rata Mentah:", averageRatingResponse); // DEBUG: Log respons rating rata-rata
+        console.log("Respons API Rating Rata-rata Mentah:", averageRatingResponse); 
 
-        // Asumsi struktur respons API rating rata-rata: { message: "success", averageRating: X, reviewCount: Y }
         if (averageRatingResponse && averageRatingResponse.data) {
           setAverageRating(averageRatingResponse.data.averageRating || 0);
           setReviewCount(averageRatingResponse.data.reviewCount || 0);
@@ -149,36 +141,31 @@ export default function EventDetailPage() {
           setReviewCount(0);
         }
 
-        // --- 4. Cek status bergabung/rating pengguna (jika pengguna login) ---
         if (user) {
           try {
-            // Panggil getUserRatingForEvent dengan DUA argumen: userId dan eventId
             const userRatingResponse = await getUserRatingForEvent(user.id, eventId);
-            console.log("Respons API Status Rating/Bergabung Pengguna Mentah:", userRatingResponse); // DEBUG: Log respons status pengguna
+            console.log("Respons API Status Rating/Bergabung Pengguna Mentah:", userRatingResponse); 
 
-            // Asumsi struktur respons API status rating pengguna: { message: "success", hasRated: bool, isJoined: bool, rating: { rating: X, comment: "Y" } }
             if (userRatingResponse.data) {
                 if (userRatingResponse.data.hasRated && userRatingResponse.data.rating) {
                     setUserRating(userRatingResponse.data.rating.rating);
                     setUserComment(userRatingResponse.data.rating.comment || "");
-                    setIsJoined(true); // Pengguna sudah bergabung jika sudah memberi rating
-                } else if (userRatingResponse.data.isJoined) { // Hanya bergabung, belum memberi rating
+                    setIsJoined(true); 
+                } else if (userRatingResponse.data.isJoined) { 
                     setIsJoined(true);
                 } else {
-                    setIsJoined(false); // Tidak bergabung dan tidak memberi rating
+                    setIsJoined(false); 
                     setUserRating(0);
                     setUserComment("");
                 }
             }
           } catch (userCheckError) {
-              // Menangkap error jika pengguna belum bergabung/rating, ini normal
               console.log("Info: Pengguna belum memberi rating/bergabung atau error saat cek status.", userCheckError.response?.data?.message || userCheckError.message);
               setIsJoined(false);
               setUserRating(0);
               setUserComment("");
           }
         } else {
-            // Reset jika pengguna tidak login
             setIsJoined(false);
             setUserRating(0);
             setUserComment("");
@@ -193,10 +180,10 @@ export default function EventDetailPage() {
     };
 
     fetchEventData();
-  }, [params.id, user]); // Dependensi `user` agar data pengguna diperbarui ketika login/logout
+  }, [params.id, user]); 
 
   const handleJoinEvent = async () => {
-    if (!user) { // Pengecekan Autentikasi
+    if (!user) { 
         toast({
             title: "Login Diperlukan",
             description: "Anda perlu login untuk bergabung dengan event ini.",
@@ -211,16 +198,15 @@ export default function EventDetailPage() {
 
     try {
         if (!isJoined) {
-            await joinEvent(event.id, user.id); // Panggil API untuk bergabung
+            await joinEvent(event.id, user.id); 
             setIsJoined(true);
             toast({
                 title: "Event Berhasil Diikuti",
                 description: "Anda telah berhasil bergabung dengan event ini!",
             });
         } else {
-            await deleteRatingParticipation(event.id); // Panggil API untuk membatalkan bergabung
+            await deleteRatingParticipation(event.id); 
             setIsJoined(false);
-            // Reset user rating/comment jika user meninggalkan event
             setUserRating(0);
             setUserComment("");
             toast({
@@ -228,13 +214,12 @@ export default function EventDetailPage() {
                 description: "Anda telah meninggalkan event ini.",
             });
         }
-        // Opsional: Muat ulang detail event untuk memperbarui jumlah peserta jika ada
         const eventResponse = await getEventDetail(Number(params.id));
         if (eventResponse && eventResponse.data && eventResponse.data.event) {
             const apiEvent = eventResponse.data.event;
             setEvent(prev => ({
                 ...prev,
-                attendees: apiEvent.jumlah_peserta || 0, // Update attendees
+                attendees: apiEvent.jumlah_peserta || 0, 
             }));
         }
     } catch (err) {
@@ -248,7 +233,7 @@ export default function EventDetailPage() {
   };
 
   const handleSubmitRating = async () => {
-    if (!user) { // Pengecekan Autentikasi
+    if (!user) {
         toast({
             title: "Login Diperlukan",
             description: "Anda perlu login untuk mengirim ulasan.",
@@ -271,9 +256,9 @@ export default function EventDetailPage() {
     }
 
     try {
-        await submitUserRating({ // Panggil API untuk mengirim rating
+        await submitUserRating({ 
             eventId: event.id,
-            userId: user.id, // Pastikan userId dikirim atau diturunkan oleh backend dari token
+            userId: user.id, 
             rating: userRating,
             comment: userComment,
         });
@@ -281,11 +266,10 @@ export default function EventDetailPage() {
             title: "Ulasan Terkirim",
             description: "Terima kasih telah berbagi pengalaman Anda!",
         });
-        setUserRating(0); // Reset form
-        setUserComment(""); // Reset form
-        setIsRatingOpen(false); // Tutup dialog
+        setUserRating(0); 
+        setUserComment(""); 
+        setIsRatingOpen(false); 
 
-        // Muat ulang ulasan dan rating rata-rata untuk memperbarui UI
         const reviewsResponse = await getEventRatings(event.id);
         if (reviewsResponse && reviewsResponse.data && Array.isArray(reviewsResponse.data.data)) {
           setReviews(reviewsResponse.data.data);
@@ -302,7 +286,6 @@ export default function EventDetailPage() {
           setReviewCount(0);
         }
 
-        // Pastikan status bergabung juga diupdate jika ini aksi pertama pengguna
         setIsJoined(true);
     } catch (err) {
         console.error("Gagal mengirim ulasan:", err);
@@ -315,8 +298,6 @@ export default function EventDetailPage() {
   };
 
   const handleLikeReview = (reviewId) => {
-    // Fungsionalitas ini memerlukan endpoint backend untuk menyukai ulasan
-    // Untuk saat ini, tetap sebagai pembaruan mock lokal untuk menunjukkan interaksi
     const updatedReviews = reviews.map((review) =>
       review.id === reviewId ? { ...review, likes: (review.likes || 0) + 1 } : review
     );
@@ -339,7 +320,6 @@ export default function EventDetailPage() {
     return <div className="text-center py-10">Event tidak ditemukan.</div>;
   }
 
-  // Helper untuk format tanggal
   const formattedDate = event.date ? event.date : 'Tanggal tidak tersedia';
   const displayLocation = event.location ? `${event.location}, ${event.region}` : 'Lokasi tidak tersedia';
 
@@ -368,7 +348,7 @@ export default function EventDetailPage() {
             </div>
             <div className="flex items-center">
               <MapPin className="h-4 w-4 mr-2" /> {displayLocation},{" "}
-              {provinceName} {/* Menggunakan state provinceName */}
+              {provinceName} 
             </div>
             <div className="flex items-center">
               <Users className="h-4 w-4 mr-2" /> {event.attendees || "N/A"}{" "}
@@ -562,7 +542,6 @@ export default function EventDetailPage() {
                             <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center">
                                     <Avatar className="h-8 w-8 mr-2">
-                                        {/* Asumsi review.user.username atau review.username */}
                                         <AvatarImage src={review.user?.avatar || "/placeholder.svg"} alt={review.user?.username || "Pengguna"} />
                                         <AvatarFallback>
                                             {review.user?.username ? review.user.username.charAt(0).toUpperCase() : 'U'}

@@ -4,7 +4,6 @@ import Sidebar from "@/components/admin-page/sidebar";
 
 export default function DashboardAdminDaerah() {
   return (
-    // PERUBAHAN: Latar belakang utama menjadi abu-abu muda
     <div className="flex h-screen bg-slate-100 dark:bg-slate-900">
       <Sidebar role="admin-daerah" />
       <div className="flex-1 overflow-auto p-4 sm:p-6 md:p-8">

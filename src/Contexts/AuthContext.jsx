@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 // Import API functions
-import { loginUser, registerRegularUser } from '@/lib/api'; //
+import { loginUser, registerRegularUser } from '@/lib/api'; 
 
 const AuthContext = createContext(null);
 
@@ -44,10 +44,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await loginUser(email, password); // Use API service
-      const data = response.data; // Axios puts response body in .data
+      const response = await loginUser(email, password); 
+      const data = response.data; 
 
-      if (response.status === 200) { // Check status for success
+      if (response.status === 200) { 
         setUser(data.user);
         setToken(data.token);
         toast({
@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
         } else if (data.user.role === 'ADMIN_DAERAH') {
           navigate('/admin-daerah/dashboard');
         } else {
-          navigate('/user/dashboard'); // Asumsi role default adalah user biasa
+          navigate('/user/dashboard'); 
         }
         return true;
       } else {
@@ -84,10 +84,10 @@ export const AuthProvider = ({ children }) => {
 
   const registerUser = async (username, email, password) => {
     try {
-      const response = await registerRegularUser(username, email, password); // Use API service
-      const data = response.data; // Axios puts response body in .data
+      const response = await registerRegularUser(username, email, password); 
+      const data = response.data; 
 
-      if (response.status === 200) { // Check status for success
+      if (response.status === 200) { 
         toast({
           title: "Pendaftaran Berhasil",
           description: data.message || "Akun Anda berhasil dibuat. Silakan login.",

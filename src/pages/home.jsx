@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import heroImage from '../assets/images/hero.webp'; // Pastikan path ini benar
+import heroImage from '../assets/images/hero.webp'; 
 
 import { FaFacebook, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 import { getEvents } from '@/lib/api';
@@ -15,31 +15,26 @@ const Home = () => {
     const fetchEvents = async () => {
       try {
         setLoadingEvents(true);
-        setErrorEvents(null); // Reset error state
+        setErrorEvents(null); 
         const response = await getEvents();
 
-        // PERBAIKAN UTAMA: Pastikan response.data adalah array sebelum diolah
         if (response && Array.isArray(response.data)) {
           const sortedEvents = [...response.data].sort((a, b) => {
-            // Tambahkan pengecekan jika date tidak valid
             const dateA = new Date(a.date);
             const dateB = new Date(b.date);
-            if (isNaN(dateA) || isNaN(dateB)) return 0; // Atau logika sortir lain jika tanggal tidak valid
-            return dateB - dateA; // Urutkan dari yang terbaru
+            if (isNaN(dateA) || isNaN(dateB)) return 0; 
+            return dateB - dateA; 
           });
           setLatestEvents(sortedEvents.slice(0, 3));
         } else {
-          // Jika response.data bukan array, set ke array kosong atau tangani error
           console.warn("Expected response.data to be an array for events, but got:", response?.data);
           setLatestEvents([]);
-          // Pertimbangkan untuk set error di sini jika format tidak sesuai harapan
-          // setErrorEvents("Format data event tidak sesuai.");
         }
         setLoadingEvents(false);
       } catch (err) {
         console.error("Failed to fetch latest events:", err);
         setErrorEvents("Gagal memuat event terbaru. Silakan coba lagi nanti.");
-        setLatestEvents([]); // Pastikan latestEvents adalah array kosong jika ada error
+        setLatestEvents([]); 
         setLoadingEvents(false);
       }
     };
@@ -49,7 +44,6 @@ const Home = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Hero Section */}
       <section
         className="relative flex items-center py-20 md:py-32 bg-cover bg-center min-h-[70vh]"
         style={{
@@ -87,7 +81,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Highlight Events Section */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Event Terbaru</h2>
@@ -130,12 +123,10 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Testimonial Section (Bonus) */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">Apa Kata Mereka</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Testimonial items */}
             <div className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-100">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
@@ -176,7 +167,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Call to Action */}
       <section className="py-16 bg-blue-600 text-white text-center">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold mb-4">Jelajahi Budaya Indonesia Bersama Kami</h2>
@@ -189,7 +179,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Footer Section */}
       <footer className="bg-gray-800 text-white py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">

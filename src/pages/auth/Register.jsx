@@ -1,8 +1,8 @@
 // src/pages/auth/Register.jsx
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
-import { useToast } from '@/hooks/use-toast'; // Import useToast
+import { useAuth } from '@/contexts/AuthContext'; 
+import { useToast } from '@/hooks/use-toast'; 
 
 const Register = () => {
   const { registerUser } = useAuth();
@@ -22,7 +22,7 @@ const Register = () => {
     });
   };
 
-  const handleSubmit = async (e) => { // Pastikan ada 'async' di sini
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
@@ -41,7 +41,6 @@ const Register = () => {
     setLoading(false);
 
     if (success) {
-      // Opsional: reset form setelah sukses jika tidak langsung navigate
       setFormData({
         name: '',
         email: '',

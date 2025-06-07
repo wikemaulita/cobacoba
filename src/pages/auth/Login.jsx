@@ -1,12 +1,12 @@
 // src/pages/auth/Login.jsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
-import { useToast } from '@/hooks/use-toast'; // Import useToast
+import { useAuth } from "@/contexts/AuthContext"; 
+import { useToast } from '@/hooks/use-toast'; 
 
 const Login = () => {
   const { login } = useAuth();
-  const { toast } = useToast(); // Menggunakan useToast di sini
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -20,13 +20,12 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = async (e) => { // Pastikan ada 'async' di sini
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     const success = await login(formData.email, formData.password);
     setLoading(false);
     
-    // Navigasi sekarang dihandle di AuthContext
   };
 
   return (

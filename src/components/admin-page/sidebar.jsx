@@ -98,7 +98,6 @@ export default function Sidebar({ role }) {
   return (
     <div
       className={cn(
-        // PERUBAHAN: Latar belakang gelap, teks terang
         "bg-slate-800 text-slate-200 border-r border-slate-700 transition-all duration-300 flex flex-col",
         collapsed ? "w-20" : "w-64"
       )}
@@ -119,7 +118,6 @@ export default function Sidebar({ role }) {
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          // PERUBAHAN: Warna tombol hover
           className="ml-auto text-slate-300 hover:bg-slate-700 hover:text-white"
         >
           {collapsed ? <Menu className="h-5 w-5" /> : <X className="h-5 w-5" />}
@@ -137,10 +135,10 @@ export default function Sidebar({ role }) {
             ).map((item) => (
                 <Button
                   key={item.id}
-                  variant="ghost" // PERUBAHAN: Variant ghost untuk semua
+                  variant="ghost" 
                   className={cn(
-                    "w-full justify-start mb-1 text-slate-300 hover:bg-slate-700 hover:text-white", // PERUBAHAN: Style default
-                    isActive(item.path) && "bg-blue-600 text-white hover:bg-blue-500", // PERUBAHAN: Style item aktif
+                    "w-full justify-start mb-1 text-slate-300 hover:bg-slate-700 hover:text-white", 
+                    isActive(item.path) && "bg-blue-600 text-white hover:bg-blue-500", 
                     collapsed ? "px-3" : "px-4"
                   )}
                   onClick={() => navigate(item.path)}

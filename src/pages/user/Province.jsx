@@ -4,36 +4,33 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { getProvinces } from '@/lib/api'; // Import API function
+import { getProvinces } from '@/lib/api'; 
 
 export default function ProvincesPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [provinces, setProvinces] = useState([]); // State for provinces, inisialisasi sebagai array kosong
-  const [loading, setLoading] = useState(true); // Loading state
-  const [error, setError] = useState(null); // Error state
+  const [provinces, setProvinces] = useState([]); 
+  const [loading, setLoading] = useState(true); 
+  const [error, setError] = useState(null); 
 
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
         setLoading(true);
-        setError(null); // Reset error state
+        setError(null); 
         const response = await getProvinces();
 
-        // PERBAIKAN UTAMA: Pastikan response.data adalah array
         if (response && Array.isArray(response.data)) {
           setProvinces(response.data);
         } else {
           console.warn("Expected response.data to be an array for provinces, but got:", response?.data);
-          setProvinces([]); // Set ke array kosong jika format tidak sesuai
-          // Pertimbangkan untuk set error di sini jika format tidak sesuai harapan
-          // setError("Format data provinsi tidak sesuai.");
+          setProvinces([]); 
         }
         setLoading(false);
       } catch (err) {
         console.error("Failed to fetch provinces:", err);
         setError("Gagal memuat data provinsi. Silakan coba lagi nanti.");
-        setProvinces([]); // Pastikan provinces adalah array kosong jika ada error
+        setProvinces([]); 
         setLoading(false);
       }
     };
@@ -41,7 +38,6 @@ export default function ProvincesPage() {
     fetchProvinces();
   }, []);
 
-  // PERBAIKAN: Pastikan 'provinces' adalah array sebelum memanggil .filter
   const filteredProvinces = Array.isArray(provinces)
     ? provinces.filter((province) =>
         province.name && province.name.toLowerCase().includes(searchQuery.toLowerCase())

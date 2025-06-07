@@ -248,7 +248,6 @@ export default function EventsPage() {
               <Select
                 value={selectedRegion}
                 onValueChange={handleRegionChange}
-                // PERBAIKAN: Disable jika tidak ada provinsi yang dipilih atau tidak ada daerah tersedia
                 disabled={selectedProvince === ALL_PROVINCES_VALUE || !Array.isArray(availableRegions) || availableRegions.length === 0}
               >
                 <SelectTrigger>
@@ -256,7 +255,6 @@ export default function EventsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL_REGIONS_VALUE}>Semua Daerah</SelectItem>
-                  {/* PERBAIKAN: availableRegions.map menggunakan properti 'nama' */}
                   {Array.isArray(availableRegions) && availableRegions.map((region) => (
                     <SelectItem key={region.id} value={region.nama}>
                       {region.nama}
@@ -294,7 +292,6 @@ export default function EventsPage() {
         {filteredEvents.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredEvents.map((event) => (
-              // PERBAIKAN: Mengkonversi nama properti event agar sesuai dengan EventCard
               <EventCard
                 key={event.id}
                 event={{
@@ -304,8 +301,7 @@ export default function EventsPage() {
                   image: event.gambar,
                   date: event.tanggal,
                   location: event.lokasi,
-                  region: event.daerah?.nama || 'N/A', // Ambil nama daerah jika ada
-                  // Tambahkan properti lain yang mungkin dibutuhkan EventCard
+                  region: event.daerah?.nama || 'N/A',
                 }}
               />
             ))}

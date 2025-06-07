@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { MapPin, Landmark, Calendar, ArrowLeft } from "lucide-react";
-import { getProvinceDetail } from '@/lib/api'; // Import API function
+import { getProvinceDetail } from '@/lib/api'; 
 
 export default function ProvinceDetailPage() {
   const { id } = useParams();
@@ -28,7 +28,7 @@ export default function ProvinceDetailPage() {
     };
 
     fetchProvinceDetails();
-  }, [id]); // Re-fetch when ID changes
+  }, [id]); 
 
   if (loading) {
     return <div className="text-center py-10">Loading province details...</div>;
@@ -110,7 +110,6 @@ export default function ProvinceDetailPage() {
                   <CardContent className="p-4">
                     <h4 className="font-medium text-lg">{region.name}</h4>
                     <p className="text-sm text-muted-foreground">{region.description || "No description."}</p>
-                    {/* Optional: Add a link to region detail if exists */}
                     <Button variant="link" className="p-0 h-auto mt-2" onClick={() => console.log(`Maps to /user/regions/${region.id}`)}>View Details</Button>
                   </CardContent>
                 </Card>

@@ -32,8 +32,8 @@ const ALL_REGIONS_VALUE = "__ALL_REGIONS__";
 export default function CulturesPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProvince, setSelectedProvince] = useState(""); // "" berarti semua
-  const [selectedRegion, setSelectedRegion] = useState("");   // "" berarti semua
+  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedType, setSelectedType] = useState("All Types");
   const [allCultures, setAllCultures] = useState([]);
   const [filteredCultures, setFilteredCultures] = useState([]);
@@ -90,11 +90,11 @@ export default function CulturesPage() {
       );
     }
 
-    if (provinceName) { // Filter jika provinceName tidak kosong
+    if (provinceName) { 
       currentFiltered = currentFiltered.filter((culture) => culture.province === provinceName);
     }
 
-    if (regionName) { // Filter jika regionName tidak kosong
+    if (regionName) { 
       currentFiltered = currentFiltered.filter((culture) => culture.region === regionName);
     }
 
@@ -115,14 +115,13 @@ export default function CulturesPage() {
   };
 
   const handleProvinceChange = async (valueFromSelect) => {
-    // Jika pengguna memilih opsi "Semua Provinsi", set state provinsi menjadi string kosong
     if (valueFromSelect === ALL_PROVINCES_VALUE) {
       setSelectedProvince("");
-      setSelectedRegion(""); // Reset juga region
+      setSelectedRegion(""); 
       setAvailableRegions([]);
     } else {
       setSelectedProvince(valueFromSelect);
-      setSelectedRegion(""); // Reset region setiap kali provinsi berubah
+      setSelectedRegion(""); 
       if (valueFromSelect) {
         try {
           const provinceObj = provinces.find(p => p.name === valueFromSelect);
@@ -141,14 +140,12 @@ export default function CulturesPage() {
           setAvailableRegions([]);
         }
       } else {
-         // Ini seharusnya tidak terjadi jika "ALL_PROVINCES_VALUE" ditangani dengan benar
         setAvailableRegions([]);
       }
     }
   };
 
   const handleRegionChange = (valueFromSelect) => {
-    // Jika pengguna memilih opsi "Semua Daerah", set state region menjadi string kosong
     if (valueFromSelect === ALL_REGIONS_VALUE) {
       setSelectedRegion("");
     } else {
@@ -211,7 +208,6 @@ export default function CulturesPage() {
             <div>
               <Select value={selectedType} onValueChange={handleTypeChange}>
                 <SelectTrigger>
-                  {/* selectedType tidak akan pernah "" karena inisialisasi "All Types" */}
                   <SelectValue placeholder="Tipe" />
                 </SelectTrigger>
                 <SelectContent>
@@ -224,13 +220,11 @@ export default function CulturesPage() {
               </Select>
             </div>
             <div>
-              {/* `selectedProvince` bisa "" (menampilkan placeholder) */}
               <Select value={selectedProvince} onValueChange={handleProvinceChange} >
                 <SelectTrigger>
                   <SelectValue placeholder="Provinsi" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* PERBAIKAN: Gunakan nilai konstanta untuk opsi "Semua" */}
                   <SelectItem value={ALL_PROVINCES_VALUE}>Semua Provinsi</SelectItem>
                   {Array.isArray(provinces) && provinces.map((province) => (
                     <SelectItem key={province.id} value={province.name}>
@@ -241,7 +235,6 @@ export default function CulturesPage() {
               </Select>
             </div>
             <div>
-              {/* `selectedRegion` bisa "" (menampilkan placeholder) */}
               <Select
                 value={selectedRegion}
                 onValueChange={handleRegionChange}
@@ -251,7 +244,6 @@ export default function CulturesPage() {
                   <SelectValue placeholder="Daerah" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* PERBAIKAN: Gunakan nilai konstanta untuk opsi "Semua" */}
                   <SelectItem value={ALL_REGIONS_VALUE}>Semua Daerah</SelectItem>
                   {Array.isArray(availableRegions) && availableRegions.map((region) => (
                     <SelectItem key={region.id} value={region.name}>

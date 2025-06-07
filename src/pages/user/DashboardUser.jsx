@@ -17,25 +17,22 @@ export default function UserDashboard() {
   const [totalCulturesCount, setTotalCulturesCount] = useState(0);
   const [popularCultures, setPopularCultures] = useState([]);
   const [recommendedItems, setRecommendedItems] = useState([]);
-  const [loading, setLoading] = useState(true); // PERUBAHAN: Tambahkan state loading
+  const [loading, setLoading] = useState(true); 
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true); // Mulai loading
+      setLoading(true); 
       try {
-        // Fetch semua data secara paralel
         const [eventsResponse, provincesResponse, culturesResponse] = await Promise.all([
           getEvents(),
           getProvinces(),
           getCultures()
         ]);
 
-        // PERUBAHAN: Tambahkan pengecekan apakah response.data adalah array
         const eventsData = Array.isArray(eventsResponse?.data) ? eventsResponse.data : [];
         const provincesData = Array.isArray(provincesResponse?.data) ? provincesResponse.data : [];
         const culturesData = Array.isArray(culturesResponse?.data) ? culturesResponse.data : [];
 
-        // Proses data events
         const sortedEvents = [...eventsData].sort(
           (a, b) => new Date(a.date) - new Date(b.date)
         );
@@ -43,26 +40,22 @@ export default function UserDashboard() {
         setFeaturedEvent(sortedEvents[0] || null);
         setTotalEventsCount(eventsData.length);
 
-        // Proses data provinces
         setTotalProvincesCount(provincesData.length);
 
-        // Proses data cultures
         setTotalCulturesCount(culturesData.length);
         setPopularCultures(culturesData.slice(0, 4));
         setRecommendedItems([...eventsData.slice(0, 2), ...culturesData.slice(0, 2)]);
 
       } catch (error) {
         console.error("Gagal memuat data dashboard:", error);
-        // Anda bisa menambahkan state error di sini jika perlu
       } finally {
-        setLoading(false); // Selesai loading, baik sukses maupun gagal
+        setLoading(false); 
       }
     };
 
     fetchData();
   }, []);
 
-  // PERUBAHAN: Tampilkan pesan loading
   if (loading) {
     return <div className="text-center py-10">Memuat dashboard...</div>;
   }

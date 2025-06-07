@@ -56,8 +56,6 @@ export default function AccountRequests() {
     try {
       setLoadingRequests(true);
       const response = await getAdminRequests();
-      // Filter requests with status 'pending' to show only relevant ones.
-      // Adjust if your backend already filters by status
       setRequests(response.data.filter(req => req.status === 'pending'));
       setLoadingRequests(false);
     } catch (err) {
@@ -98,25 +96,14 @@ export default function AccountRequests() {
 
     try {
       if (actionType === "approve") {
-        // Fetch provinces and regions to get the correct IDs if needed
-        // The mock data had `daerahId`, which might be `regionId` on backend
-        // You might need to fetch `province` and `region` to get their `id`s for `createAdminUser`
-        let daerahId = selectedRequest.daerahId; // Use existing mock data's daerahId for now.
-                                              // In a real scenario, you'd look up the ID from province/region name.
-
-        // Example: If backend for `createAdminUser` expects `provinceId` and `regionId` separately
-        // const provinces = (await getProvinces()).data;
-        // const targetProvince = provinces.find(p => p.name === selectedRequest.province);
-        // const regions = (await getRegions({ provinceId: targetProvince?.id })).data;
-        // const targetRegion = regions.find(r => r.name === selectedRequest.region);
+        let daerahId = selectedRequest.daerahId; 
 
         await createAdminUser({
           username: selectedRequest.name,
           email: selectedRequest.email,
-          password: selectedRequest.password || 'default_temp_password', // Ensure backend has a default or generated password
-          alamat: selectedRequest.details.split('for ')[1] || 'Alamat tidak tersedia', // Parse from details
-          daerahId: daerahId, // Use the ID from mock data or dynamically look up
-          // role: "ADMIN_DAERAH" // Backend should set this
+          password: selectedRequest.password || 'default_temp_password', 
+          alamat: selectedRequest.details.split('for ')[1] || 'Alamat tidak tersedia', 
+          daerahId: daerahId, 
         });
 
         await updateAdminRequest(selectedRequest.id, { status: "approved" });
@@ -125,14 +112,14 @@ export default function AccountRequests() {
           title: "Request Disetujui",
           description: `Akun admin untuk ${selectedRequest.name} berhasil dibuat.`,
         });
-        fetchRequests(); // Re-fetch requests to update the list
+        fetchRequests(); 
       } else if (actionType === "reject") {
         await updateAdminRequest(selectedRequest.id, { status: "rejected" });
         toast({
           title: "Permintaan Ditolak",
           description: `Permintaan akun dari ${selectedRequest.name} telah ditolak.`,
         });
-        fetchRequests(); // Re-fetch requests to update the list
+        fetchRequests(); 
       }
     } catch (error) {
       console.error(`Error ${actionType}ing request:`, error);
@@ -144,7 +131,7 @@ export default function AccountRequests() {
     } finally {
       setLoadingAction(false);
       setConfirmDialogOpen(false);
-      setDetailsOpen(false); // Close details dialog if it was open
+      setDetailsOpen(false); 
     }
   };
 
@@ -194,7 +181,7 @@ export default function AccountRequests() {
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div> {/* This count would come from backend */}
+              <div className="text-2xl font-bold">0</div> 
             </CardContent>
           </Card>
           <Card>
@@ -203,7 +190,7 @@ export default function AccountRequests() {
               <XCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div> {/* This count would come from backend */}
+              <div className="text-2xl font-bold">0</div> 
             </CardContent>
           </Card>
         </div>

@@ -53,7 +53,6 @@ const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo / Brand */}
           <div className="flex-shrink-0">
             <Link
               to="/"
@@ -63,7 +62,6 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-8">
               <Link to="/Event" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300"> {/* Diperbarui ke /events */}
@@ -96,7 +94,6 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Mobile menu button */}
           <div className="md:hidden">
             <button
               onClick={toggleMenu}
@@ -104,7 +101,6 @@ const Navbar = () => {
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
-              {/* Icon when menu is closed */}
               {!isOpen ? (
                 <svg
                   className="block h-6 w-6"
@@ -143,13 +139,12 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile menu, show/hide based on menu state */}
       <div
         className={`${isOpen ? "block" : "hidden"} md:hidden transition-all duration-300`}
       >
         <div className="backdrop-blur-lg bg-white bg-opacity-90 px-4 pt-2 pb-4 space-y-1 border-t border-gray-200">
           <Link
-            to="/events" // Diperbarui ke /events
+            to="/events" 
             className="block px-3 py-3 text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-100 rounded-md transition duration-300"
             onClick={() => setIsOpen(false)}
           >

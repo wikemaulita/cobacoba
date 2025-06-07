@@ -59,7 +59,7 @@ export default function EventManagement() {
   const { toast } = useToast();
   const [events, setEvents] = useState([]);
   const [provinces, setProvinces] = useState([]);
-  const [allRegions, setAllRegions] = useState([]); // Store all regions
+  const [allRegions, setAllRegions] = useState([]); 
   const [availableRegions, setAvailableRegions] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -71,8 +71,8 @@ export default function EventManagement() {
     image: "",
     location: "",
     date: "",
-    regionId: "", // Use region ID
-    provinceId: "", // Use province ID
+    regionId: "", 
+    provinceId: "", 
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -164,7 +164,7 @@ export default function EventManagement() {
     setFormData((prev) => ({
       ...prev,
       provinceId: provinceId,
-      regionId: "", // Reset region
+      regionId: "",
     }));
     setAvailableRegions(allRegions.filter(region => region.provinceId === provinceId));
   };
@@ -187,21 +187,19 @@ export default function EventManagement() {
     e.preventDefault();
     try {
       if (selectedEvent) {
-        // Edit existing event
         await updateEvent(selectedEvent.id, formData);
         toast({
           title: "Event Updated",
           description: `${formData.name} has been updated successfully`,
         });
       } else {
-        // Add new event
         await createEvent(formData);
         toast({
           title: "Event Added",
           description: `${formData.name} has been added successfully`,
         });
       }
-      fetchEventsProvincesAndRegions(); // Re-fetch data to update the table
+      fetchEventsProvincesAndRegions(); 
       setIsDialogOpen(false);
     } catch (err) {
       console.error("Failed to save event:", err);
@@ -220,7 +218,7 @@ export default function EventManagement() {
         title: "Event Deleted",
         description: `${selectedEvent.name} has been deleted successfully`,
       });
-      fetchEventsProvincesAndRegions(); // Re-fetch data to update the table
+      fetchEventsProvincesAndRegions();
       setIsDeleteDialogOpen(false);
     } catch (err) {
       console.error("Failed to delete event:", err);
@@ -265,7 +263,6 @@ export default function EventManagement() {
               <div className="text-2xl font-bold">{events.length}</div>
             </CardContent>
           </Card>
-          {/* These cards need specific API calls or aggregation logic */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -370,7 +367,6 @@ export default function EventManagement() {
           </TableBody>
         </Table>
 
-        {/* View Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
@@ -432,7 +428,6 @@ export default function EventManagement() {
           </DialogContent>
         </Dialog>
 
-        {/* Add/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
@@ -577,7 +572,6 @@ export default function EventManagement() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>

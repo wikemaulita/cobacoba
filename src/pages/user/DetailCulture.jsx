@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, ArrowLeft } from "lucide-react";
-import { getCultureDetail, getCultures } from '@/lib/api'; // Import API functions
+import { getCultureDetail, getCultures } from '@/lib/api'; 
 
 export default function CultureDetailPage() {
   const { id } = useParams();
@@ -23,11 +23,10 @@ export default function CultureDetailPage() {
         setCulture(response.data);
         setLoading(false);
 
-        // Fetch related cultures (example: same province/type, exclude current)
         const allCulturesResponse = await getCultures();
         const filteredRelated = allCulturesResponse.data.filter(
           (item) => item.id !== Number(id) && item.province === response.data.province
-        ).slice(0, 3); // Get up to 3 related items
+        ).slice(0, 3); 
         setRelatedCultures(filteredRelated);
 
       } catch (err) {
@@ -38,7 +37,7 @@ export default function CultureDetailPage() {
     };
 
     fetchCultureDetails();
-  }, [id]); // Re-fetch when ID changes
+  }, [id]); 
 
   if (loading) {
     return <div className="text-center py-10">Loading cultural item...</div>;

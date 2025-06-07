@@ -32,7 +32,7 @@ import { getProvinces, createProvince, updateProvince, deleteProvince } from '@/
 
 export default function ProvinceManagement() {
   const { toast } = useToast();
-  const [provinces, setProvinces] = useState([]); // State for provinces
+  const [provinces, setProvinces] = useState([]); 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState(null);
@@ -95,21 +95,19 @@ export default function ProvinceManagement() {
     e.preventDefault();
     try {
       if (selectedProvince) {
-        // Edit existing province
         await updateProvince(selectedProvince.id, formData);
         toast({
           title: "Province Updated",
           description: `${formData.name} has been updated successfully`,
         });
       } else {
-        // Add new province
         await createProvince(formData);
         toast({
           title: "Province Added",
           description: `${formData.name} has been added successfully`,
         });
       }
-      fetchProvinces(); // Re-fetch data to update the table
+      fetchProvinces(); 
       setIsDialogOpen(false);
     } catch (err) {
       console.error("Failed to save province:", err);
@@ -128,7 +126,7 @@ export default function ProvinceManagement() {
         title: "Province Deleted",
         description: `${selectedProvince.name} has been deleted successfully`,
       });
-      fetchProvinces(); // Re-fetch data to update the table
+      fetchProvinces(); 
       setIsDeleteDialogOpen(false);
     } catch (err) {
       console.error("Failed to delete province:", err);
@@ -174,7 +172,6 @@ export default function ProvinceManagement() {
               <div className="text-2xl font-bold">{provinces.length}</div>
             </CardContent>
           </Card>
-          {/* These cards would need separate API calls or aggregated data from backend */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -252,7 +249,6 @@ export default function ProvinceManagement() {
           </TableBody>
         </Table>
 
-        {/* Add/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -310,7 +306,6 @@ export default function ProvinceManagement() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>

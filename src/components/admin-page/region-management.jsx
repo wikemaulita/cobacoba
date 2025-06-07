@@ -1,5 +1,5 @@
 // src/components/admin-page/region-management.jsx
-import { useState, useEffect } from "react"; // Corrected import statement
+import { useState, useEffect } from "react"; 
 import {
   Card,
   CardContent,
@@ -40,15 +40,15 @@ import { getRegions, getProvinces, createRegion, updateRegion, deleteRegion } fr
 
 export default function RegionManagement() {
   const { toast } = useToast();
-  const [regions, setRegions] = useState([]); // State for regions
-  const [provinces, setProvinces] = useState([]); // State for provinces for dropdown
+  const [regions, setRegions] = useState([]); 
+  const [provinces, setProvinces] = useState([]); 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     image: "",
-    provinceId: "", // Store province ID instead of name
+    provinceId: "", 
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -60,7 +60,6 @@ export default function RegionManagement() {
         getRegions(),
         getProvinces()
       ]);
-      // Map region data to include province name for display
       const regionsData = regionsResponse.data.map(region => ({
         ...region,
         provinceName: provincesResponse.data.find(p => p.id === region.provinceId)?.name || 'Unknown Province'
@@ -94,7 +93,7 @@ export default function RegionManagement() {
     setFormData({
       name: region.name,
       image: region.image,
-      provinceId: region.provinceId, // Use province ID
+      provinceId: region.provinceId, 
     });
     setIsDialogOpen(true);
   };
@@ -115,7 +114,7 @@ export default function RegionManagement() {
   const handleProvinceSelectChange = (value) => {
     setFormData((prev) => ({
       ...prev,
-      provinceId: Number(value), // Convert to number if IDs are numbers
+      provinceId: Number(value), 
     }));
   };
 
@@ -123,21 +122,19 @@ export default function RegionManagement() {
     e.preventDefault();
     try {
       if (selectedRegion) {
-        // Edit existing region
         await updateRegion(selectedRegion.id, formData);
         toast({
           title: "Region Updated",
           description: `${formData.name} has been updated successfully`,
         });
       } else {
-        // Add new region
         await createRegion(formData);
         toast({
           title: "Region Added",
           description: `${formData.name} has been added successfully`,
         });
       }
-      fetchRegionsAndProvinces(); // Re-fetch data to update the table
+      fetchRegionsAndProvinces(); 
       setIsDialogOpen(false);
     } catch (err) {
       console.error("Failed to save region:", err);
@@ -156,7 +153,7 @@ export default function RegionManagement() {
         title: "Region Deleted",
         description: `${selectedRegion.name} has been deleted successfully`,
       });
-      fetchRegionsAndProvinces(); // Re-fetch data to update the table
+      fetchRegionsAndProvinces(); 
       setIsDeleteDialogOpen(false);
     } catch (err) {
       console.error("Failed to delete region:", err);
@@ -224,7 +221,7 @@ export default function RegionManagement() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">N/A</div> {/* Needs specific API or aggregation */}
+              <div className="text-2xl font-bold">N/A</div> 
               <p className="text-xs text-muted-foreground">Data from backend</p>
             </CardContent>
           </Card>
@@ -251,7 +248,7 @@ export default function RegionManagement() {
                     />
                   </TableCell>
                   <TableCell className="font-medium">{region.name}</TableCell>
-                  <TableCell>{region.provinceName}</TableCell> {/* Display province name */}
+                  <TableCell>{region.provinceName}</TableCell> 
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
                       <Button
@@ -283,7 +280,6 @@ export default function RegionManagement() {
           </TableBody>
         </Table>
 
-        {/* Add/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -311,7 +307,7 @@ export default function RegionManagement() {
                 <div className="grid gap-2">
                   <Label htmlFor="province">Province</Label>
                   <Select
-                    value={String(formData.provinceId)} // Convert to string for Select component
+                    value={String(formData.provinceId)} 
                     onValueChange={handleProvinceSelectChange}
                     required
                   >
@@ -360,7 +356,6 @@ export default function RegionManagement() {
               </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
               <DialogContent>
                 <DialogHeader>

@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-// Import the API function for provinces
-import { getProvinces } from '@/lib/api'; // Pastikan path ini benar
+import { getProvinces } from '@/lib/api'; 
 
 const Pulau = () => {
     const [pulauData, setPulauData] = useState([]);
@@ -15,19 +14,17 @@ const Pulau = () => {
             try {
                 setLoading(true);
                 setError(null);
-                const response = await getProvinces(); // Memanggil API untuk provinsi
-                console.log('Respons API /provinsi:', response); // Log respons untuk debugging
+                const response = await getProvinces(); 
+                console.log('Respons API /provinsi:', response); 
 
-                // PERBAIKAN UTAMA: Akses data sesuai struktur API
                 let fetchedPulau = [];
                 if (response && response.data && response.data.provinsi && Array.isArray(response.data.provinsi.data)) {
                     fetchedPulau = response.data.provinsi.data.map(prov => ({
                         id: prov.id,
                         title: prov.nama,
-                        // Gunakan URL gambar langsung dari API!
                         imageUrl: prov.gambar,
-                        description: `Menampilkan keindahan seni dan budaya ${prov.nama}.`, // Deskripsi bisa tetap dinamis atau dari API jika ada
-                        path: `/${prov.nama.toLowerCase().replace(/\s/g, '-')}`, // Membuat slug path yang lebih bersih
+                        description: `Menampilkan keindahan seni dan budaya ${prov.nama}.`, 
+                        path: `/${prov.nama.toLowerCase().replace(/\s/g, '-')}`, 
                     }));
                 } else {
                     console.warn("Struktur respons API /provinsi tidak sesuai harapan.");
@@ -69,7 +66,7 @@ const Pulau = () => {
                     <h2 className="text-2xl font-bold mb-2">{section.title}</h2>
                     <div className="relative">
                         <img
-                            src={section.imageUrl} // Menggunakan URL gambar dari API
+                            src={section.imageUrl} 
                             alt={section.title}
                             className="w-full h-48 object-cover rounded-lg brightness-75"
                         />
