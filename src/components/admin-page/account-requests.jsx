@@ -42,8 +42,8 @@ import { getAdminRequests, createAdminUser, updateAdminRequest, deleteAdminReque
 
 export default function AccountRequests() {
   const { toast } = useToast();
-  const { token } = useAuth(); //
-  const [requests, setRequests] = useState([]); // State for account requests
+  const { token } = useAuth(); 
+  const [requests, setRequests] = useState([]); 
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -55,8 +55,32 @@ export default function AccountRequests() {
   const fetchRequests = async () => {
     try {
       setLoadingRequests(true);
+      setError(null);
       const response = await getAdminRequests();
-      setRequests(response.data.filter(req => req.status === 'pending'));
+
+      if (response.data && response.data.request && Array.isArray(response.data.request.data)) {
+        
+        const transformedData = response.data.request.data.map(req => ({
+          id: req.id,
+          name: req.user.username,
+          email: req.user.email,
+          region: req.daerah ? req.daerah.nama : req.namaDaerah || 'N/A', 
+          province: 'N/A', 
+          requestDate: new Date(req.createdAt).toLocaleDateString('id-ID'), 
+          status: req.status,
+          details: `Permintaan untuk daerah ${req.daerah ? req.daerah.nama : req.namaDaerah || 'baru'}`, 
+          
+          daerahId: req.daerahId,
+          password: req.user.password, 
+        }));
+
+        setRequests(transformedData.filter(req => req.status.toUpperCase() === 'PENDING'));
+
+      } else {
+        console.warn("Struktur API untuk admin requests tidak sesuai harapan:", response.data);
+        setRequests([]);
+      }
+
       setLoadingRequests(false);
     } catch (err) {
       console.error("Failed to fetch account requests:", err);
