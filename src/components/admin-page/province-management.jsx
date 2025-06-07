@@ -27,17 +27,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pencil, Plus, Trash2, Map, MapPin, Landmark } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-// Import API functions
 import { getProvinces, createProvince, updateProvince, deleteProvince } from '@/lib/api';
 
 export default function ProvinceManagement() {
   const { toast } = useToast();
-  const [provinces, setProvinces] = useState([]); 
+  const [provinces, setProvinces] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState(null);
   const [formData, setFormData] = useState({
-    name: "",
+    nama: "",
     gambar: "",
   });
   const [loading, setLoading] = useState(true);
@@ -47,7 +46,11 @@ export default function ProvinceManagement() {
     try {
       setLoading(true);
       const response = await getProvinces();
-      setProvinces(response.data.provinsi.data);
+      if (response.data && response.data.provinsi && Array.isArray(response.data.provinsi.data)) {
+        setProvinces(response.data.provinsi.data);
+      } else {
+        setProvinces([]);
+      }
       setLoading(false);
     } catch (err) {
       console.error("Failed to fetch provinces:", err);
@@ -63,8 +66,8 @@ export default function ProvinceManagement() {
   const handleAddNew = () => {
     setSelectedProvince(null);
     setFormData({
-      name: "",
-      image: "",
+      nama: "",
+      gambar: "",
     });
     setIsDialogOpen(true);
   };
@@ -72,7 +75,7 @@ export default function ProvinceManagement() {
   const handleEdit = (province) => {
     setSelectedProvince(province);
     setFormData({
-      name: province.nama || "",
+      nama: province.nama || "",
       gambar: province.gambar || "",
     });
     setIsDialogOpen(true);
@@ -98,16 +101,16 @@ export default function ProvinceManagement() {
         await updateProvince(selectedProvince.id, formData);
         toast({
           title: "Province Updated",
-          description: `${formData.name} has been updated successfully`,
+          description: `${formData.nama} has been updated successfully`,
         });
       } else {
         await createProvince(formData);
         toast({
           title: "Province Added",
-          description: `${formData.name} has been added successfully`,
+          description: `${formData.nama} has been added successfully`,
         });
       }
-      fetchProvinces(); 
+      fetchProvinces();
       setIsDialogOpen(false);
     } catch (err) {
       console.error("Failed to save province:", err);
@@ -124,9 +127,9 @@ export default function ProvinceManagement() {
       await deleteProvince(selectedProvince.id);
       toast({
         title: "Province Deleted",
-        description: `${selectedProvince.name} has been deleted successfully`,
+        description: `${selectedProvince.nama} has been deleted successfully`,
       });
-      fetchProvinces(); 
+      fetchProvinces();
       setIsDeleteDialogOpen(false);
     } catch (err) {
       console.error("Failed to delete province:", err);
@@ -212,12 +215,12 @@ export default function ProvinceManagement() {
                 <TableRow key={province.id}>
                   <TableCell>
                     <img
-                      src={province.image || "/placeholder.svg"}
-                      alt={province.name}
+                      src={province.gambar || "/placeholder.svg"}
+                      alt={province.nama}
                       className="h-10 w-10 rounded-md object-cover"
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{province.name}</TableCell>
+                  <TableCell className="font-medium">{province.nama}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
                       <Button
@@ -264,9 +267,9 @@ export default function ProvinceManagement() {
             <form onSubmit={handleSubmit}>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">Province Name</Label>
+                  <Label htmlFor="nama">Province Name</Label>
                   <Input
-                    id="name"
+                    id="nama"
                     name="nama"
                     value={formData.nama}
                     onChange={handleInputChange}
@@ -274,16 +277,16 @@ export default function ProvinceManagement() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="image">Image URL</Label>
+                  <Label htmlFor="gambar">Image URL</Label>
                   <Input
-                    id="image"
+                    id="gambar"
                     name="gambar"
                     value={formData.gambar}
                     onChange={handleInputChange}
                     placeholder="/placeholder.svg?height=100&width=100"
                     required
                   />
-                  {formData.image && (
+                  {formData.gambar && (
                     <div className="mt-2">
                       <p className="text-sm text-muted-foreground mb-1">
                         Preview:
@@ -312,7 +315,7 @@ export default function ProvinceManagement() {
               <DialogTitle>Confirm Deletion</DialogTitle>
               <DialogDescription>
                 Are you sure you want to delete{" "}
-                <span className="font-medium">{selectedProvince?.name}</span>?
+                <span className="font-medium">{selectedProvince?.nama}</span>?
                 This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
