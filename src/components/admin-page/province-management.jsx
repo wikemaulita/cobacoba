@@ -38,7 +38,7 @@ export default function ProvinceManagement() {
   const [selectedProvince, setSelectedProvince] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
-    image: "",
+    gambar: "",
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,7 +47,7 @@ export default function ProvinceManagement() {
     try {
       setLoading(true);
       const response = await getProvinces();
-      setProvinces(response.data);
+      setProvinces(response.data.provinsi.data);
       setLoading(false);
     } catch (err) {
       console.error("Failed to fetch provinces:", err);
@@ -72,8 +72,8 @@ export default function ProvinceManagement() {
   const handleEdit = (province) => {
     setSelectedProvince(province);
     setFormData({
-      name: province.name,
-      image: province.image,
+      name: province.nama || "",
+      gambar: province.gambar || "",
     });
     setIsDialogOpen(true);
   };
@@ -267,8 +267,8 @@ export default function ProvinceManagement() {
                   <Label htmlFor="name">Province Name</Label>
                   <Input
                     id="name"
-                    name="name"
-                    value={formData.name}
+                    name="nama"
+                    value={formData.nama}
                     onChange={handleInputChange}
                     required
                   />
@@ -277,8 +277,8 @@ export default function ProvinceManagement() {
                   <Label htmlFor="image">Image URL</Label>
                   <Input
                     id="image"
-                    name="image"
-                    value={formData.image}
+                    name="gambar"
+                    value={formData.gambar}
                     onChange={handleInputChange}
                     placeholder="/placeholder.svg?height=100&width=100"
                     required
@@ -289,7 +289,7 @@ export default function ProvinceManagement() {
                         Preview:
                       </p>
                       <img
-                        src={formData.image || "/placeholder.svg"}
+                        src={formData.gambar || "/placeholder.svg"}
                         alt="Preview"
                         className="h-20 w-20 rounded-md object-cover"
                       />
