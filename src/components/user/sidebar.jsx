@@ -33,7 +33,7 @@ export default function UserSidebar() {
       id: "events",
       label: "Events",
       icon: <Calendar className="h-5 w-5" />,
-      path: "/user/events",
+      path: "/user/Event",
     },
     {
       id: "provinces",

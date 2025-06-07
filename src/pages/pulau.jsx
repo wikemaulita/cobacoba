@@ -28,13 +28,13 @@ const Pulau = () => {
                     }));
                 } else {
                     console.warn("Struktur respons API /provinsi tidak sesuai harapan.");
-                    setError("Gagal memuat data pulau. Format data tidak sesuai.");
+                    setError("Gagal memuat data Provinsi. Format data tidak sesuai.");
                 }
 
                 setPulauData(fetchedPulau);
             } catch (err) {
-                console.error("Gagal memuat daftar pulau:", err);
-                setError("Gagal memuat daftar pulau. Silakan coba lagi nanti.");
+                console.error("Gagal memuat daftar Provinsi:", err);
+                setError("Gagal memuat daftar Provinsi. Silakan coba lagi nanti.");
                 setPulauData([]);
             } finally {
                 setLoading(false);
@@ -45,7 +45,7 @@ const Pulau = () => {
     }, []);
 
     if (loading) {
-        return <div className="text-center text-gray-600 py-10">Memuat pulau...</div>;
+        return <div className="text-center text-gray-600 py-10">Memuat Provinsi...</div>;
     }
 
     if (error) {
@@ -53,7 +53,7 @@ const Pulau = () => {
     }
 
     if (pulauData.length === 0) {
-        return <div className="text-center text-gray-600 py-10">Tidak ada pulau yang tersedia.</div>;
+        return <div className="text-center text-gray-600 py-10">Tidak ada provinsi yang tersedia.</div>;
     }
 
     return (

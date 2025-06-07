@@ -57,8 +57,8 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          <Route path="/Event" element={<EventsPage />} />
-          <Route path="/Event/:id" element={<EventDetailPage />} />
+          <Route path="/user/Event" element={<EventsPage />} />
+          <Route path="/user/Event/:id" element={<EventDetailPage />} />
 
           <Route
             path="/super-admin"
@@ -88,7 +88,8 @@ function AppContent() {
           >
             <Route index element={<UserDashboard />} />
             <Route path="dashboard" element={<UserDashboard />} />
-
+            <Route path="Event" element={<EventsPage />} />
+            <Route path="Event/:id" element={<EventDetailPage />} />
             <Route path="cultures" element={<CulturesPage />} />
             <Route path="provinces" element={<ProvincesPage />} />
             <Route path="cultures/:id" element={<CultureDetailPage />} />

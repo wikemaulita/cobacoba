@@ -64,11 +64,11 @@ const Navbar = () => {
 
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-8">
-              <Link to="/Event" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300"> {/* Diperbarui ke /events */}
+              <Link to="/user/Event" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300"> {/* Diperbarui ke /events */}
                 Event
               </Link>
               <Link to="/pulau" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300">
-                Pulau
+                Provinsi
               </Link>
 
               {isLoggedIn ? (
@@ -144,7 +144,7 @@ const Navbar = () => {
       >
         <div className="backdrop-blur-lg bg-white bg-opacity-90 px-4 pt-2 pb-4 space-y-1 border-t border-gray-200">
           <Link
-            to="/events" 
+            to="/user/Event" 
             className="block px-3 py-3 text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-100 rounded-md transition duration-300"
             onClick={() => setIsOpen(false)}
           >
@@ -155,7 +155,7 @@ const Navbar = () => {
             className="block px-3 py-3 text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-100 rounded-md transition duration-300"
             onClick={() => setIsOpen(false)}
           >
-            Pulau
+            Provinsi
           </Link>
           {isLoggedIn ? (
             <>

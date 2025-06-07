@@ -5,7 +5,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"; // Tambahkan CardDescription, CardHeader, CardTitle jika belum
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,17 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Search, Filter } from "lucide-react"; // Asumsi ikon ini sudah ada
-import { useNavigate } from "react-router-dom"; // Tambahkan useNavigate
-import EventCard from "@/components/user/event-card"; // Pastikan path ini benar
-import { getEvents, getProvinces, getRegions } from '@/lib/api'; // Pastikan fungsi API ini tersedia
+import { Calendar, Search, Filter } from "lucide-react";
+import EventCard from "@/components/user/event-card"; // Asumsi EventCard menerima props yang sudah diconvert
+import { getEvents, getProvinces, getRegions } from '@/lib/api';
 
 // Definisikan nilai konstanta untuk opsi "Semua"
 const ALL_PROVINCES_VALUE = "__ALL_PROVINCES__";
 const ALL_REGIONS_VALUE = "__ALL_REGIONS__";
 
 export default function EventsPage() {
-  const navigate = useNavigate(); // Inisialisasi useNavigate
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProvince, setSelectedProvince] = useState(ALL_PROVINCES_VALUE);
   const [selectedRegion, setSelectedRegion] = useState(ALL_REGIONS_VALUE);
@@ -52,21 +50,20 @@ export default function EventsPage() {
         console.log("Raw Events API Response:", eventsResponse); // DEBUG: Log respons event
 
         let fetchedEvents = [];
-        // Pastikan struktur respons API events benar (misal: response.data.event.data)
+        // PERBAIKAN: Akses array event di eventsResponse.data.event.data
         if (eventsResponse && eventsResponse.data && eventsResponse.data.event && Array.isArray(eventsResponse.data.event.data)) {
           fetchedEvents = eventsResponse.data.event.data;
         } else {
           console.warn("Expected eventsResponse.data.event.data to be an array for events, but got:", eventsResponse?.data);
         }
         setAllEvents(fetchedEvents);
-        setFilteredEvents(fetchedEvents); // Awalnya, semua event ditampilkan
+        setFilteredEvents(fetchedEvents);
 
         // --- Fetch Provinces ---
         const provincesResponse = await getProvinces();
         console.log("Raw Provinces API Response:", provincesResponse); // DEBUG: Log respons provinsi
 
         let fetchedProvinces = [];
-        // Pastikan struktur respons API provinces benar
         if (provincesResponse && provincesResponse.data && provincesResponse.data.provinsi && Array.isArray(provincesResponse.data.provinsi.data)) {
           fetchedProvinces = provincesResponse.data.provinsi.data;
         } else {
@@ -123,37 +120,39 @@ export default function EventsPage() {
     if (selectedProvince !== ALL_PROVINCES_VALUE) {
       const selectedProvinceObj = provinces.find(p => p.nama === selectedProvince);
       if (selectedProvinceObj) {
+        // Dapatkan semua ID daerah yang termasuk dalam provinsi yang dipilih
         const regionIdsInSelectedProvince = provinceToRegionIdsMap[selectedProvinceObj.id] || [];
 
         currentFiltered = currentFiltered.filter(event =>
           event.daerahId && regionIdsInSelectedProvince.includes(event.daerahId)
         );
       } else {
-        currentFiltered = [];
+        currentFiltered = []; // Jika provinsi tidak ditemukan, tidak ada event yang cocok
       }
     }
 
     // Filter berdasarkan daerah yang dipilih
     if (selectedRegion !== ALL_REGIONS_VALUE) {
       currentFiltered = currentFiltered.filter(event =>
-        event.daerah && event.daerah.nama === selectedRegion
+        event.daerah && event.daerah.nama === selectedRegion // Filter langsung berdasarkan nama daerah
       );
     }
 
     setFilteredEvents(currentFiltered);
-  }, [searchQuery, selectedProvince, selectedRegion, allEvents, provinces, provinceToRegionIdsMap]);
+  }, [searchQuery, selectedProvince, selectedRegion, allEvents, provinces, provinceToRegionIdsMap]); // Tambahkan dependencies
 
+  // Fungsi untuk mengubah provinsi yang dipilih dan memuat daerah terkait
   const handleProvinceChange = async (valueFromSelect) => {
     setSelectedProvince(valueFromSelect);
-    setSelectedRegion(ALL_REGIONS_VALUE);
-    setAvailableRegions([]);
+    setSelectedRegion(ALL_REGIONS_VALUE); // Reset daerah ketika provinsi berubah
+    setAvailableRegions([]); // Reset daftar daerah yang tersedia
 
     if (valueFromSelect !== ALL_PROVINCES_VALUE) {
       try {
         const provinceObj = provinces.find(p => p.nama === valueFromSelect);
         if (provinceObj) {
-          const regionsResponse = await getRegions({ provinsiId: provinceObj.id });
-          console.log("Raw Regions API Response for Province Change:", regionsResponse);
+          const regionsResponse = await getRegions({ provinsiId: provinceObj.id }); // Panggil API dengan provinsiId
+          console.log("Raw Regions API Response for Province Change:", regionsResponse); // DEBUG: Log respons daerah
 
           if (regionsResponse && regionsResponse.data && regionsResponse.data.daerah && Array.isArray(regionsResponse.data.daerah.data)) {
             setAvailableRegions(regionsResponse.data.daerah.data);
@@ -195,17 +194,17 @@ export default function EventsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Event Budaya</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Event</h2>
         <p className="text-muted-foreground">
-          Temukan dan ikuti berbagai event budaya menarik di seluruh Indonesia.
+          Telusuri dan ikuti event budaya di seluruh Indonesia
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Cari & Filter Event</CardTitle>
+          <CardTitle>Cari & Filter</CardTitle>
           <CardDescription>
-            Temukan event berdasarkan nama, deskripsi, provinsi, atau daerah.
+            Temukan event berdasarkan nama, lokasi, atau deskripsi
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -287,19 +286,18 @@ export default function EventsPage() {
         {filteredEvents.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredEvents.map((event) => (
+              // PERBAIKAN: Mengkonversi nama properti event agar sesuai dengan EventCard
               <EventCard
                 key={event.id}
                 event={{
                   id: event.id,
-                  name: event.nama,
-                  description: event.deskripsi,
-                  image: event.gambar,
-                  date: event.tanggal,
-                  location: event.lokasi,
-                  region: event.daerah?.nama || 'N/A', // Pastikan daerah.nama ada, berikan fallback
+                  name: event.nama,           // mapping nama ke name
+                  description: event.deskripsi, // mapping deskripsi ke description
+                  image: event.gambar,        // mapping gambar ke image
+                  date: event.tanggal,        // mapping tanggal ke date
+                  location: event.lokasi,     // mapping lokasi ke location
+                  region: event.daerah?.nama, // mapping daerah.nama ke region
                 }}
-                // Tambahkan onClick untuk navigasi ke detail event
-                onClick={() => navigate(`/user/events/${event.id}`)}
               />
             ))}
           </div>
