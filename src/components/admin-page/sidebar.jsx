@@ -1,4 +1,3 @@
-// src/components/admin-page/sidebar.jsx
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -14,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Sidebar({ role }) {
@@ -104,15 +103,17 @@ export default function Sidebar({ role }) {
     >
       <div className="p-4 border-b border-slate-700 flex items-center justify-between h-16">
         {!collapsed && (
-          <h1 className="font-bold text-xl text-white">
-            {user
-              ? user.role === "SUPER_ADMIN"
-                ? "Super Admin"
-                : user.role === "ADMIN_DAERAH"
+          <Link to="/" className="transition-colors hover:text-slate-300">
+            <h1 className="font-bold text-xl text-white">
+              {user
+                ? user.role === "SUPER_ADMIN"
+                  ? "Super Admin"
+                  : user.role === "ADMIN_DAERAH"
                   ? "Admin Daerah"
                   : null
-              : "Admin Panel"}
-          </h1>
+                : "Admin Panel"}
+            </h1>
+          </Link>
         )}
         <Button
           variant="ghost"
@@ -126,28 +127,27 @@ export default function Sidebar({ role }) {
 
       <div className="flex flex-col flex-1 py-4 overflow-y-auto">
         <nav className="space-y-1 px-2">
-          {user && (
+          {user &&
             (user.role === "SUPER_ADMIN"
               ? menuItemsSuperAdmin
               : user.role === "ADMIN_DAERAH"
-                ? menuItemsAdminDaerah
-                : []
+              ? menuItemsAdminDaerah
+              : []
             ).map((item) => (
-                <Button
-                  key={item.id}
-                  variant="ghost" 
-                  className={cn(
-                    "w-full justify-start mb-1 text-slate-300 hover:bg-slate-700 hover:text-white", 
-                    isActive(item.path) && "bg-blue-600 text-white hover:bg-blue-500", 
-                    collapsed ? "px-3" : "px-4"
-                  )}
-                  onClick={() => navigate(item.path)}
-                >
-                  {item.icon}
-                  {!collapsed && <span className="ml-3">{item.label}</span>}
-                </Button>
-              ))
-          )}
+              <Button
+                key={item.id}
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start mb-1 text-slate-300 hover:bg-slate-700 hover:text-white",
+                  isActive(item.path) && "bg-blue-600 text-white hover:bg-blue-500",
+                  collapsed ? "px-3" : "px-4"
+                )}
+                onClick={() => navigate(item.path)}
+              >
+                {item.icon}
+                {!collapsed && <span className="ml-3">{item.label}</span>}
+              </Button>
+            ))}
         </nav>
       </div>
 
@@ -165,8 +165,8 @@ export default function Sidebar({ role }) {
                 {user
                   ? user.username
                   : role === "super-admin"
-                    ? "Super Admin"
-                    : "Admin Daerah"}
+                  ? "Super Admin"
+                  : "Admin Daerah"}
               </p>
               <p className="text-xs text-slate-400">{user ? user.email : "admin@example.com"}</p>
             </div>
@@ -175,7 +175,7 @@ export default function Sidebar({ role }) {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start mt-4 text-slate-300 hover:bg-slate-700 hover:text-white", // PERUBAHAN: Style tombol logout
+            "w-full justify-start mt-4 text-slate-300 hover:bg-slate-700 hover:text-white",
             collapsed ? "px-3" : "px-4"
           )}
           onClick={handleLogout}

@@ -1,4 +1,3 @@
-// src/components/user/sidebar.jsx
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -12,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function UserSidebar() {
@@ -63,7 +62,11 @@ export default function UserSidebar() {
       )}
     >
       <div className="p-4 border-b border-slate-700 flex items-center justify-between h-16">
-        {!collapsed && <h1 className="font-bold text-xl text-white">Jelajah Budaya</h1>}
+        {!collapsed && (
+          <Link to="/" className="transition-colors hover:text-slate-300">
+            <h1 className="font-bold text-xl text-white">Jelajah Budaya</h1>
+          </Link>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -112,7 +115,7 @@ export default function UserSidebar() {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start mt-4 text-slate-300 hover:bg-slate-700 hover:text-white", // PERUBAHAN: Style tombol logout
+            "w-full justify-start mt-4 text-slate-300 hover:bg-slate-700 hover:text-white",
             collapsed ? "px-3" : "px-4"
           )}
           onClick={handleLogout}

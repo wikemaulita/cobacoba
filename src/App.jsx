@@ -54,8 +54,8 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          <Route path="/Event" element={<EventsPage />} />
-          <Route path="/Event/:id" element={<EventDetailPage />} />
+          <Route path="/events" element={<EventsPage />} />
+          <Route path="/events/:id" element={<EventDetailPage />} />
 
           <Route
             path="/super-admin"
