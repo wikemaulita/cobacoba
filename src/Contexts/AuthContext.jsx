@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -83,10 +82,11 @@ export const AuthProvider = ({ children }) => {
 
   const registerUser = async (username, email, password) => {
     try {
-      const response = await registerRegularUser(username, email, password); 
-      const data = response.data; 
+      const response = await registerRegularUser(username, email, password);
+      const data = response.data;
 
-      if (response.status === 200) { 
+      // PERBAIKAN: Memeriksa rentang status sukses (200-299)
+      if (response.status >= 200 && response.status < 300) {
         toast({
           title: "Pendaftaran Berhasil",
           description: data.message || "Akun Anda berhasil dibuat. Silakan login.",
@@ -94,6 +94,7 @@ export const AuthProvider = ({ children }) => {
         navigate('/login');
         return true;
       } else {
+        // Blok ini untuk kasus yang tidak terduga, jaga-jaga jika ada
         toast({
           title: "Pendaftaran Gagal",
           description: data.message || "Terjadi kesalahan saat mendaftar. Silakan coba lagi.",
@@ -104,7 +105,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Error during registration:", error);
       toast({
-        title: "Terjadi Kesalahan",
+        title: "Pendaftaran Gagal",
         description: error.response?.data?.message || "Tidak dapat terhubung ke server. Silakan coba lagi nanti.",
         variant: "destructive",
       });

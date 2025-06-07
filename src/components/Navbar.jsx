@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
-
-// Import icons for social media
 import { FaFacebook, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 
 const Navbar = () => {
@@ -13,11 +11,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      setScrolled(window.scrollY > 20);
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -42,6 +36,26 @@ const Navbar = () => {
     }
     setIsOpen(false);
   };
+  
+  // --- PERBAIKAN: Logika untuk menentukan path event dinamis ---
+  const getEventPath = () => {
+    if (isLoggedIn) {
+      switch (user.role) {
+        case 'SUPER_ADMIN':
+          return '/super-admin/events';
+        case 'ADMIN_DAERAH':
+          return '/admin-daerah/events';
+        case 'USER':
+          return '/user/events';
+        default:
+          return '/events'; // Halaman event publik
+      }
+    }
+    return '/events'; // Halaman event publik untuk tamu
+  };
+
+  const eventPath = getEventPath();
+  // --- Akhir Perbaikan ---
 
   return (
     <nav
@@ -64,11 +78,12 @@ const Navbar = () => {
 
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-8">
-              <Link to="/user/events" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300"> {/* Diperbarui ke /events */}
+              {/* PERBAIKAN: Gunakan eventPath dinamis */}
+              <Link to={eventPath} className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300">
                 Event
               </Link>
               <Link to="/pulau" className="text-gray-800 hover:text-red-600 px-3 py-2 font-medium transition duration-300">
-                Provinsi
+                Pulau
               </Link>
 
               {isLoggedIn ? (
@@ -102,36 +117,12 @@ const Navbar = () => {
             >
               <span className="sr-only">Open main menu</span>
               {!isOpen ? (
-                <svg
-                  className="block h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
+                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               ) : (
-                <svg
-                  className="block h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               )}
             </button>
@@ -143,8 +134,9 @@ const Navbar = () => {
         className={`${isOpen ? "block" : "hidden"} md:hidden transition-all duration-300`}
       >
         <div className="backdrop-blur-lg bg-white bg-opacity-90 px-4 pt-2 pb-4 space-y-1 border-t border-gray-200">
+          {/* PERBAIKAN: Gunakan eventPath dinamis untuk menu mobile */}
           <Link
-            to="/user/events" 
+            to={eventPath} 
             className="block px-3 py-3 text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-100 rounded-md transition duration-300"
             onClick={() => setIsOpen(false)}
           >
@@ -155,7 +147,7 @@ const Navbar = () => {
             className="block px-3 py-3 text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-100 rounded-md transition duration-300"
             onClick={() => setIsOpen(false)}
           >
-            Provinsi
+            Pulau
           </Link>
           {isLoggedIn ? (
             <>

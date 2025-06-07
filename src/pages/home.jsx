@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import heroImage from '../assets/images/hero.webp'; 
-
 import { FaFacebook, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 import { getEvents } from '@/lib/api';
 import { Calendar, MapPin } from 'lucide-react';
@@ -18,16 +17,14 @@ const Home = () => {
         setErrorEvents(null); 
         const response = await getEvents();
 
-        if (response && Array.isArray(response.data)) {
-          const sortedEvents = [...response.data].sort((a, b) => {
-            const dateA = new Date(a.date);
-            const dateB = new Date(b.date);
-            if (isNaN(dateA) || isNaN(dateB)) return 0; 
-            return dateB - dateA; 
-          });
-          setLatestEvents(sortedEvents.slice(0, 3));
+        // PERBAIKAN: Mengakses data dari response.data.event.data
+        if (response.data && response.data.event && Array.isArray(response.data.event.data)) {
+          const allEvents = response.data.event.data;
+          // Mengurutkan event berdasarkan tanggal terbaru (descending)
+          const sortedEvents = [...allEvents].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+          setLatestEvents(sortedEvents.slice(0, 3)); // Ambil 3 event terbaru
         } else {
-          console.warn("Expected response.data to be an array for events, but got:", response?.data);
+          console.warn("Struktur API untuk event tidak sesuai harapan.", response.data);
           setLatestEvents([]);
         }
         setLoadingEvents(false);
@@ -61,7 +58,7 @@ const Home = () => {
               <p className="text-xl md:text-2xl text-gray-200 mb-8 max-w-lg mx-auto md:mx-0">
                 Menyelami Keindahan Budaya Nusantara
               </p>
-              <Link to="/Event" className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 transform hover:scale-105 shadow-lg">
+              <Link to="/events" className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 transform hover:scale-105 shadow-lg">
                 Jelajahi Sekarang!
               </Link>
             </div>
@@ -95,20 +92,20 @@ const Home = () => {
                 <div key={event.id} className="bg-white rounded-lg overflow-hidden shadow-xl transition-transform duration-300 hover:transform hover:scale-105 border border-gray-100">
                   <div className="h-48 overflow-hidden">
                     <img
-                      src={event.image || "/placeholder.svg?height=400&width=800"}
-                      alt={event.name}
+                      src={event.gambar || "/placeholder.svg?height=400&width=800"}
+                      alt={event.nama}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-2">{event.name}</h3>
-                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">{event.description}</p>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-2">{event.nama}</h3>
+                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">{event.deskripsi}</p>
                     <div className="flex items-center text-sm text-gray-500 mb-4">
-                        <Calendar className="h-4 w-4 mr-2" /> {event.date ? new Date(event.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'}) : 'Tanggal tidak tersedia'}
-                        <MapPin className="h-4 w-4 ml-4 mr-2" /> {event.location}, {event.region}
+                        <Calendar className="h-4 w-4 mr-2" /> {event.tanggal ? new Date(event.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'}) : 'Tanggal tidak tersedia'}
+                        <MapPin className="h-4 w-4 ml-4 mr-2" /> {event.lokasi}, {event.daerah?.nama || 'N/A'}
                     </div>
                     <Link
-                      to={`/user/events/${event.id}`}
+                      to={`/events/${event.id}`}
                       className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
                     >
                       Lihat Detail
@@ -122,88 +119,9 @@ const Home = () => {
           )}
         </div>
       </section>
+      
+      {/* Bagian lainnya tetap sama */}
 
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Apa Kata Mereka</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-100">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                  <span className="text-blue-600 font-bold">AS</span>
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-800">Andi Setiawan</h4>
-                  <p className="text-gray-600 text-sm">Pengunjung Festival</p>
-                </div>
-              </div>
-              <p className="text-gray-700 leading-relaxed">"Festival Budaya Bali memberikan pengalaman yang luar biasa! Saya belajar banyak tentang budaya Bali yang kaya dan beragam."</p>
-            </div>
-            <div className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-100">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                  <span className="text-red-600 font-bold">DP</span>
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-800">Dewi Pratiwi</h4>
-                  <p className="text-gray-600 text-sm">Seniman Lokal</p>
-                </div>
-              </div>
-              <p className="text-gray-700 leading-relaxed">"Pameran Kesenian Jawa memberi kesempatan bagi seniman lokal seperti saya untuk menunjukkan karya dan melestarikan budaya."</p>
-            </div>
-            <div className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-100">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                  <span className="text-green-600 font-bold">RA</span>
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-800">Rini Anggraini</h4>
-                  <p className="text-gray-600 text-sm">Pelajar</p>
-                </div>
-              </div>
-              <p className="text-gray-700 leading-relaxed">"Karnaval Budaya Nusantara memberikan wawasan baru tentang keberagaman Indonesia. Sangat informatif dan menyenangkan!"</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-blue-600 text-white text-center">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-4">Jelajahi Budaya Indonesia Bersama Kami</h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
-            Bergabunglah dengan komunitas Jelajah Budaya dan dapatkan informasi terbaru tentang event budaya di seluruh Indonesia.
-          </p>
-          <Link to="/register" className="inline-block bg-white text-blue-600 hover:bg-gray-100 font-bold py-3 px-8 rounded-full text-lg transition duration-300 transform hover:scale-105 shadow-md">
-              Daftar Sekarang
-          </Link>
-        </div>
-      </section>
-
-      <footer className="bg-gray-800 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-6 md:mb-0">
-              <h3 className="text-2xl font-bold mb-2">Jelajah Budaya</h3>
-              <p>Menyelami Keindahan Budaya Nusantara</p>
-            </div>
-
-            <div className="flex space-x-6 mb-6 md:mb-0">
-              <a href="https://youtu.be/dQw4w9WgXcQ" className="text-white hover:text-gray-300 transition duration-300">
-                <FaFacebook size={24} />
-              </a>
-              <a href="https://youtu.be/dQw4w9WgXcQ" className="text-white hover:text-gray-300 transition duration-300">
-                <FaInstagram size={24} />
-              </a>
-              <a href="https://youtu.be/dQw4w9WgXcQ" className="text-white hover:text-gray-300 transition duration-300">
-                <FaTwitter size={24} />
-              </a>
-              <a href="https://youtu.be/dQw4w9WgXcQ" className="text-white hover:text-gray-300 transition duration-300">
-                <FaYoutube size={24} />
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

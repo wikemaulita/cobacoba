@@ -14,10 +14,10 @@ import Register from "./pages/auth/Register";
 import DashboardSuperAdmin from "./pages/super-admin/DashboardSuperAdmin";
 import DashboardAdminDaerah from "./pages/admin-daerah/DashboardAdminDaerah";
 import UserDashboard from "./pages/user/DashboardUser";
-import EventsPage from "./pages/user/Event"; 
+import EventsPage from "./pages/user/Event";
 import CulturesPage from "./pages/user/Culture";
 import ProvincesPage from "./pages/user/Province";
-import EventDetailPage from "./pages/user/DetailEvent"; 
+import EventDetailPage from "./pages/user/DetailEvent";
 import CultureDetailPage from "./pages/user/DetailCulture";
 import ProvinceDetailPage from "./pages/user/DetailProvince";
 import DetailPulauPage from "./pages/user/DetailPulau";
@@ -28,8 +28,10 @@ import ProvinceManagement from "./components/admin-page/province-management";
 import RegionManagement from "./components/admin-page/region-management";
 import CultureManagement from "./components/admin-page/culture-management";
 import EventManagement from "./components/admin-page/event-management";
+
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { Toaster } from "@/components/ui/toaster"; 
 
 function AppContent() {
   const location = useLocation();
@@ -96,6 +98,7 @@ function AppContent() {
         </Routes>
       </main>
       <Footer />
+      <Toaster /> 
     </div>
   );
 }
